@@ -21,3 +21,12 @@ This document outlines the required environment variables to configure the Azure
 - `ACL_READ_ONLY`  
   A comma-delimited list of glob patterns specifying which files or folders are readable.  
   Example:
+
+---
+
+## How to Apply
+
+1. In the Azure Portal, navigate to your Function App → **Configuration**.
+2. Under **Application settings**, click **New application setting** for each variable above.
+3. Enter the **Name** and **Value** exactly as shown.
+4. Save changes and restart your Function App to apply the new settings.
