@@ -22,6 +22,10 @@ This document outlines the required environment variables to configure the Azure
   A comma-delimited list of glob patterns specifying which files or folders are readable.  
   Example:
 
+- `ACL_READ_WRITE`  
+A comma-delimited list of glob patterns specifying which files or folders are writable.  
+Example:
+
 ---
 
 ## How to Apply
