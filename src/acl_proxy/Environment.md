@@ -20,11 +20,11 @@ This document outlines the required environment variables to configure the Azure
 
 - `ACL_READ_ONLY`  
   A comma-delimited list of glob patterns specifying which files or folders are readable.  
-  Example:
+  Example: schema/*, data/*.json
 
 - `ACL_READ_WRITE`  
 A comma-delimited list of glob patterns specifying which files or folders are writable.  
-Example:
+Example: notes/**, docs/**/*.json
 
 ---
 
