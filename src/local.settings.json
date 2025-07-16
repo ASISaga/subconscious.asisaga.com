@@ -2,6 +2,10 @@
     "IsEncrypted": false,
     "Values": {
       "FUNCTIONS_WORKER_RUNTIME": "python",
-      "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+      "LINKEDINCLIENTID": "<your-client-id>",
+      "LINKEDINCLIENTSECRET": "<your-client-secret>",
+      "REDIRECT_URI": "http://localhost:3001/callback",
+      "JWT_SECRET": "a-random-jwt-secret"
     }
   }
