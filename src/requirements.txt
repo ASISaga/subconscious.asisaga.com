@@ -6,3 +6,4 @@ azure-functions
 jsonrpcserver
 requests
 python-dotenv
+fnmatch
