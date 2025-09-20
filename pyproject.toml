@@ -2,7 +2,11 @@
 name = "mcp-asisaga-com"
 version = "0.1.0"
 dependencies = [
-    "azure-functions"
+    "azure-functions",
+    "jsonrpcserver",
+    "requests",
+    "python-dotenv",
+    "fnmatch"
 ]
 [build-system]
 requires = ["setuptools", "wheel"]
