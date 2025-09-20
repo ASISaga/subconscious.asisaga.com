@@ -59,7 +59,7 @@ An Azure Storage Emulator is needed for this particular sample because we will s
 1. Install Python dependencies:
 
    ```shell
-   pip install -r requirements.txt
+    pip install .
    ```
 
 >**Note** it is a best practice to create a Virtual Environment before doing the `pip install` to avoid dependency issues/collisions, or if you are running in CodeSpaces.  See [Python Environments in VS Code](https://code.visualstudio.com/docs/python/environments#_creating-environments) for more information.

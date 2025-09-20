@@ -1,0 +1,13 @@
+[project]
+name = "mcp-asisaga-com-src"
+version = "0.1.0"
+dependencies = [
+	"azure-functions",
+	"jsonrpcserver",
+	"requests",
+	"python-dotenv",
+	"fnmatch"
+]
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
