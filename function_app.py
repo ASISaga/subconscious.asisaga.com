@@ -3,8 +3,9 @@ import azure.functions as func
 from subconscious.server import mcp
 
 # Expose the FastMCP server as an Azure Functions ASGI app.
-# The MCP endpoint is available at <function-url>/mcp (Streamable HTTP transport).
+# SSE endpoint:     <function-url>/sse       (Server-Sent Events transport)
+# Messages endpoint: <function-url>/messages  (SSE message posting)
 app = func.AsgiFunctionApp(
-    app=mcp.http_app(),
+    app=mcp.http_app(transport="sse"),
     http_auth_level=func.AuthLevel.ANONYMOUS,
 )

@@ -1,7 +1,7 @@
 """FastMCP server — Layer 3: The Persistent Subconscious.
 
 Exposes BoardroomMemory state as an MCP Resource and strategic actions as MCP Tools,
-compatible with Model Context Protocol v1.0 for remote connection.
+compatible with Model Context Protocol v1.0 for remote connection via SSE transport.
 """
 
 from __future__ import annotations
