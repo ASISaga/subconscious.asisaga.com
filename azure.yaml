@@ -2,9 +2,9 @@
 
 name: mcp.asisaga.com
 metadata:
-  template: mcp.asisaga.com@1.0.1
+  template: mcp.asisaga.com@1.0.0
 services:
   api:
-    project: ./src/
+    project: ./
     language: python
     host: function

@@ -1,5 +1,7 @@
-"""Subconscious: The Persistent Memory & Bridge for the ASI Boardroom.
+"""Subconscious — Multi-Agent Conversation Persistence MCP Server.
 
-Layer 3 of the BusinessInfinity stack — a FastMCP server deployed as an Azure Function
-that exposes Azure Table Storage memories as MCP Resources and business actions as MCP Tools.
+An Azure Functions-hosted MCP server that enables Microsoft Agent Framework
+orchestrations (Foundry Agent Service) to persist and retrieve multi-agent
+conversations.  Exposes conversation history as MCP Resources and Tools,
+with a built-in web UI for browsing orchestrations on demand.
 """
