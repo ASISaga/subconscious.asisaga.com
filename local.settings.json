@@ -3,7 +3,6 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "AZURE_STORAGE_CONNECTION_STRING": "<your-azure-storage-connection-string>",
-    "AZURE_SUBSCRIPTION_ID": "<your-azure-subscription-id>"
+    "AZURE_STORAGE_CONNECTION_STRING": "<your-azure-storage-connection-string>"
   }
 }

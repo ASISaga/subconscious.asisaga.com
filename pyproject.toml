@@ -1,13 +1,24 @@
 [project]
 name = "mcp-asisaga-com"
-version = "0.1.0"
+version = "1.0.0"
+description = "Multi-agent conversation persistence MCP server on Azure Functions"
+requires-python = ">=3.11"
 dependencies = [
     "azure-functions",
     "fastmcp>=3.0",
     "azure-data-tables",
     "azure-identity",
-    "azure-mgmt-resource>=23.0,<25",
+    "starlette",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx",
+    "ruff",
+]
+
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -17,3 +28,7 @@ line-length = 120
 target-version = "py311"
 lint.select = ["E", "F", "I", "UP", "A"]
 lint.ignore = ["D203"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,10 +1,11 @@
 import azure.functions as func
 
-from subconscious.server import mcp
+from subconscious.app import create_app
 
-# Expose the FastMCP server as an Azure Functions ASGI app.
-# The MCP endpoint is available at <function-url>/mcp (Streamable HTTP transport).
+# Expose the combined ASGI application (MCP endpoint + REST API + UI) as an
+# Azure Functions app.  The MCP streamable-HTTP endpoint lives at /mcp,
+# the REST API at /api/*, and the MCP Apps UI at /.
 app = func.AsgiFunctionApp(
-    app=mcp.http_app(),
+    app=create_app(),
     http_auth_level=func.AuthLevel.ANONYMOUS,
 )
