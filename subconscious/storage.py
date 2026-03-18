@@ -44,7 +44,10 @@ def _ensure_tables(service: TableServiceClient) -> None:
     for name in (ORCHESTRATIONS_TABLE, CONVERSATIONS_TABLE):
         try:
             service.create_table(name)
+        except ResourceNotFoundError:
+            pass
         except Exception:  # noqa: BLE001 — ResourceExistsError or HttpResponseError
+            # Table already exists — safe to ignore
             pass
 
 

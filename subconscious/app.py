@@ -179,7 +179,7 @@ _APP_HTML = """\
 <!-- Sidebar -->
 <div id="sidebar">
   <header>
-    <h1>&#x1f9e0; Subconscious</h1>
+    <h1 aria-label="Subconscious">&#x1f9e0; Subconscious</h1>
     <p>Multi-Agent Conversation Persistence</p>
   </header>
   <div id="filter-bar">

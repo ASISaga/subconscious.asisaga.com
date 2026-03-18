@@ -7,6 +7,7 @@ Framework orchestrations deployed on Foundry Agent Service.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -35,8 +36,6 @@ mcp = FastMCP(
 @mcp.resource("orchestration://{orchestration_id}")
 def orchestration_resource(orchestration_id: str) -> str:
     """Return orchestration metadata and its full conversation history as JSON."""
-    import json
-
     orch = storage.get_orchestration(orchestration_id)
     if orch is None:
         return json.dumps({"error": f"Orchestration '{orchestration_id}' not found"})
