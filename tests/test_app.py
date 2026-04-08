@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from subconscious import storage
+from subconscious import schema_storage, storage
 from subconscious.app import create_app
 
 
@@ -116,3 +116,76 @@ class TestConversationAPI:
         assert resp.status_code == 200
         data = resp.json()
         assert data["messages"] == []
+
+
+class TestSchemasAPI:
+    @pytest.mark.asyncio
+    async def test_list_schemas(self, client, schemas_dir):
+        resp = await client.get("/api/schemas")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 7
+        names = {s["name"] for s in data}
+        assert "manas" in names
+        assert "buddhi" in names
+        assert "chitta" in names
+
+    @pytest.mark.asyncio
+    async def test_get_schema_known(self, client, schemas_dir):
+        resp = await client.get("/api/schemas/manas")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["title"] == "Manas — Agent Memory State"
+
+    @pytest.mark.asyncio
+    async def test_get_schema_not_found(self, client, schemas_dir):
+        resp = await client.get("/api/schemas/unknown")
+        assert resp.status_code == 404
+        body = resp.json()
+        assert "error" in body
+        assert "available" in body
+
+
+class TestSchemaContextsAPI:
+    @pytest.mark.asyncio
+    async def test_list_schema_contexts_empty(self, client):
+        resp = await client.get("/api/schema-contexts")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    @pytest.mark.asyncio
+    async def test_store_and_get_schema_context(self, client, schemas_dir):
+        doc = {"@type": "Buddhi", "agent_id": "ceo", "name": "Steve Jobs"}
+        put_resp = await client.put("/api/schema-contexts/buddhi/ceo", json=doc)
+        assert put_resp.status_code == 200
+        put_data = put_resp.json()
+        assert put_data["schema_name"] == "buddhi"
+        assert put_data["context_id"] == "ceo"
+
+        get_resp = await client.get("/api/schema-contexts/buddhi/ceo")
+        assert get_resp.status_code == 200
+        get_data = get_resp.json()
+        assert get_data["data"] == doc
+
+    @pytest.mark.asyncio
+    async def test_get_schema_context_not_found(self, client):
+        resp = await client.get("/api/schema-contexts/manas/ghost")
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_list_schema_contexts_after_store(self, client, schemas_dir):
+        schema_storage.store_schema_context("manas", "ceo", {})
+        schema_storage.store_schema_context("manas", "cfo", {})
+        resp = await client.get("/api/schema-contexts?schema=manas")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+
+    @pytest.mark.asyncio
+    async def test_store_schema_context_invalid_json(self, client):
+        resp = await client.put(
+            "/api/schema-contexts/buddhi/ceo",
+            content=b"not-json",
+            headers={"Content-Type": "application/json"},
+        )
+        assert resp.status_code == 400

@@ -92,7 +92,6 @@ class TestMessagePersistence:
     def test_get_conversation_chronological_order(self):
         storage.create_orchestration("conv-4", "Order test")
         storage.persist_message("conv-4", "a", "user", "First")
-        # Tiny sleep to ensure distinct timestamps
         time.sleep(0.001)
         storage.persist_message("conv-4", "b", "assistant", "Second")
         time.sleep(0.001)

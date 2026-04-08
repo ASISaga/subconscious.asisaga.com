@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: mcp.asisaga.com
+name: subconscious.asisaga.com
 metadata:
-  template: mcp.asisaga.com@1.0.0
+  template: subconscious.asisaga.com@2.0.0
 services:
   api:
     project: ./

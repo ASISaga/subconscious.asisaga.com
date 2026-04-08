@@ -1,8 +1,9 @@
-"""FastMCP server — multi-agent conversation persistence.
+"""FastMCP server — multi-agent conversation persistence and schema context management.
 
-Exposes orchestration management, message persistence, and conversation
-retrieval as MCP Tools and Resources.  Designed for use by Microsoft Agent
-Framework orchestrations deployed on Foundry Agent Service.
+Exposes orchestration management, message persistence, conversation retrieval,
+boardroom mind schema definitions, and schema context persistence/retrieval as
+MCP Tools and Resources.  Designed for use by Microsoft Agent Framework
+orchestrations deployed on Foundry Agent Service.
 """
 
 from __future__ import annotations
@@ -13,24 +14,28 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from subconscious import storage
+from subconscious import schema_storage, storage
 
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP(
     "Subconscious",
     instructions=(
-        "Multi-agent conversation persistence server.  "
+        "Multi-agent conversation persistence and schema context server.  "
         "Persist and retrieve orchestration conversations from Azure Table Storage.  "
         "Use 'create_orchestration' to register a new orchestration, "
         "'persist_message' or 'persist_conversation_turn' to append messages, "
-        "and 'get_conversation' to retrieve the full history by orchestration ID."
+        "and 'get_conversation' to retrieve the full history by orchestration ID.  "
+        "Use 'list_schemas' and 'get_schema' to explore boardroom mind schema definitions.  "
+        "Use 'store_schema_context' and 'get_schema_context' to persist and retrieve "
+        "JSON-LD documents (agent Manas, Buddhi, Ahankara, Chitta, and entity perspectives) "
+        "that conform to the boardroom mind schemas."
     ),
 )
 
 
 # ---------------------------------------------------------------------------
-# MCP Resources
+# MCP Resources — orchestrations
 # ---------------------------------------------------------------------------
 
 @mcp.resource("orchestration://{orchestration_id}")
@@ -41,6 +46,38 @@ def orchestration_resource(orchestration_id: str) -> str:
         return json.dumps({"error": f"Orchestration '{orchestration_id}' not found"})
     messages = storage.get_conversation(orchestration_id)
     return json.dumps({**orch, "messages": messages})
+
+
+# ---------------------------------------------------------------------------
+# MCP Resources — schemas
+# ---------------------------------------------------------------------------
+
+@mcp.resource("schema://{schema_name}")
+def schema_resource(schema_name: str) -> str:
+    """Return a boardroom mind schema definition by name as JSON.
+
+    Available schema names: manas, buddhi, ahankara, chitta, action-plan,
+    entity-context, entity-content.
+    """
+    data = schema_storage.get_schema(schema_name)
+    if data is None:
+        available = list(schema_storage.SCHEMA_REGISTRY.keys())
+        return json.dumps({"error": f"Schema '{schema_name}' not found", "available": available})
+    return json.dumps(data)
+
+
+@mcp.resource("schema-context://{schema_name}/{context_id}")
+def schema_context_resource(schema_name: str, context_id: str) -> str:
+    """Return a stored schema context document as JSON.
+
+    Args:
+        schema_name: The mind schema name (e.g. ``manas``, ``buddhi``).
+        context_id: The context identifier (e.g. agent id ``ceo``).
+    """
+    result = schema_storage.get_schema_context(schema_name, context_id)
+    if result is None:
+        return json.dumps({"error": f"Schema context '{schema_name}/{context_id}' not found"})
+    return json.dumps(result)
 
 
 # ---------------------------------------------------------------------------
@@ -171,6 +208,108 @@ def get_conversation(
         "messages": messages,
         "total": len(messages),
     }
+
+
+# ---------------------------------------------------------------------------
+# MCP Tools — schema definitions (read-only)
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def list_schemas() -> list[dict[str, Any]]:
+    """List all available boardroom mind schema definitions.
+
+    Returns:
+        List of schema metadata records including ``name``, ``filename``,
+        ``available``, ``title``, and ``description``.
+    """
+    return schema_storage.list_schemas()
+
+
+@mcp.tool()
+def get_schema(schema_name: str) -> dict[str, Any]:
+    """Retrieve a boardroom mind schema definition by name.
+
+    Args:
+        schema_name: One of ``manas``, ``buddhi``, ``ahankara``, ``chitta``,
+            ``action-plan``, ``entity-context``, ``entity-content``.
+
+    Returns:
+        The full JSON Schema object, or an error dict if not found.
+    """
+    data = schema_storage.get_schema(schema_name)
+    if data is None:
+        available = list(schema_storage.SCHEMA_REGISTRY.keys())
+        return {"error": f"Schema '{schema_name}' not found", "available": available}
+    return data
+
+
+# ---------------------------------------------------------------------------
+# MCP Tools — schema context persistence
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def store_schema_context(
+    schema_name: str,
+    context_id: str,
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist a JSON-LD document conforming to a boardroom mind schema.
+
+    Agents use this tool to write their mind-layer documents (Manas, Buddhi,
+    Ahankara, Chitta, or entity perspectives) to durable storage so that they
+    can be retrieved in future sessions.
+
+    Args:
+        schema_name: The schema this document conforms to — one of
+            ``manas``, ``buddhi``, ``ahankara``, ``chitta``,
+            ``action-plan``, ``entity-context``, ``entity-content``.
+        context_id: Unique key for this context — typically the agent id
+            (e.g. ``"ceo"``) or a compound key for entity perspectives
+            (e.g. ``"ceo/company"``).
+        data: The JSON-LD document to persist.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context(schema_name, context_id, data)
+
+
+@mcp.tool()
+def get_schema_context(
+    schema_name: str,
+    context_id: str,
+) -> dict[str, Any]:
+    """Retrieve a stored boardroom mind schema context document.
+
+    Args:
+        schema_name: The schema the context conforms to (e.g. ``"manas"``).
+        context_id: The context identifier (e.g. ``"ceo"``).
+
+    Returns:
+        Dict with ``schema_name``, ``context_id``, ``data`` (the JSON-LD
+        document), and ``updated_at``, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context(schema_name, context_id)
+    if result is None:
+        return {"error": f"Schema context '{schema_name}/{context_id}' not found"}
+    return result
+
+
+@mcp.tool()
+def list_schema_contexts(
+    schema_name: str | None = None,
+) -> list[dict[str, Any]]:
+    """List stored schema contexts, optionally filtered by schema name.
+
+    Args:
+        schema_name: Optional filter — when provided only contexts for this
+            schema are returned.
+
+    Returns:
+        List of summary records with ``schema_name``, ``context_id``, and
+        ``updated_at``.
+    """
+    return schema_storage.list_schema_contexts(schema_name)
 
 
 # ---------------------------------------------------------------------------

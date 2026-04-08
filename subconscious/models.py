@@ -1,4 +1,4 @@
-"""Pydantic models for orchestration and conversation data."""
+"""Pydantic models for orchestration, conversation, and schema context data."""
 
 from __future__ import annotations
 
@@ -44,3 +44,21 @@ class ConversationPage(BaseModel):
     messages: list[Message]
     total: int
     has_more: bool = False
+
+
+class SchemaEntry(BaseModel):
+    """Metadata record for a registered mind schema."""
+
+    name: str
+    filename: str
+    available: bool
+    title: str = ""
+    description: str = ""
+
+
+class SchemaContextRecord(BaseModel):
+    """Summary record for a stored schema context."""
+
+    schema_name: str
+    context_id: str
+    updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())

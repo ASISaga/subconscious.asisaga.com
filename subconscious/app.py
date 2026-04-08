@@ -16,14 +16,14 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Mount, Route
 
-from subconscious import storage
+from subconscious import schema_storage, storage
 from subconscious.server import mcp
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# REST API handlers (consumed by the built-in UI)
+# REST API handlers — orchestrations (consumed by the built-in UI)
 # ---------------------------------------------------------------------------
 
 async def api_list_orchestrations(request: Request) -> JSONResponse:
@@ -49,6 +49,62 @@ async def api_get_conversation(request: Request) -> JSONResponse:
     messages = storage.get_conversation(oid, limit=limit)
     return JSONResponse({"orchestration_id": oid, "messages": messages, "total": len(messages)})
 
+
+# ---------------------------------------------------------------------------
+# REST API handlers — schema definitions (read-only)
+# ---------------------------------------------------------------------------
+
+async def api_list_schemas(request: Request) -> JSONResponse:
+    """``GET /api/schemas``"""
+    return JSONResponse(schema_storage.list_schemas())
+
+
+async def api_get_schema(request: Request) -> JSONResponse:
+    """``GET /api/schemas/{name}``"""
+    name = request.path_params["name"]
+    data = schema_storage.get_schema(name)
+    if data is None:
+        available = list(schema_storage.SCHEMA_REGISTRY.keys())
+        return JSONResponse({"error": "Schema not found", "available": available}, status_code=404)
+    return JSONResponse(data)
+
+
+# ---------------------------------------------------------------------------
+# REST API handlers — schema contexts
+# ---------------------------------------------------------------------------
+
+async def api_list_schema_contexts(request: Request) -> JSONResponse:
+    """``GET /api/schema-contexts[?schema=manas]``"""
+    schema_name = request.query_params.get("schema")
+    data = schema_storage.list_schema_contexts(schema_name)
+    return JSONResponse(data)
+
+
+async def api_get_schema_context(request: Request) -> JSONResponse:
+    """``GET /api/schema-contexts/{schema_name}/{context_id}``"""
+    schema_name = request.path_params["schema_name"]
+    context_id = request.path_params["context_id"]
+    result = schema_storage.get_schema_context(schema_name, context_id)
+    if result is None:
+        return JSONResponse({"error": "Schema context not found"}, status_code=404)
+    return JSONResponse(result)
+
+
+async def api_store_schema_context(request: Request) -> JSONResponse:
+    """``PUT /api/schema-contexts/{schema_name}/{context_id}``"""
+    schema_name = request.path_params["schema_name"]
+    context_id = request.path_params["context_id"]
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+    result = schema_storage.store_schema_context(schema_name, context_id, body)
+    return JSONResponse(result)
+
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
 
 async def api_health(request: Request) -> JSONResponse:
     """``GET /api/health``"""
@@ -78,6 +134,13 @@ def create_app() -> Starlette:
         Route("/api/orchestrations", api_list_orchestrations),
         Route("/api/orchestrations/{oid}", api_get_orchestration),
         Route("/api/orchestrations/{oid}/messages", api_get_conversation),
+        Route("/api/schemas", api_list_schemas),
+        Route("/api/schemas/{name}", api_get_schema),
+        Route("/api/schema-contexts", api_list_schema_contexts),
+        Route("/api/schema-contexts/{schema_name}/{context_id}", api_get_schema_context,
+              methods=["GET"]),
+        Route("/api/schema-contexts/{schema_name}/{context_id}", api_store_schema_context,
+              methods=["PUT"]),
         Mount("/mcp", app=mcp_app),
     ]
     return Starlette(routes=routes)
@@ -180,7 +243,7 @@ _APP_HTML = """\
 <div id="sidebar">
   <header>
     <h1 aria-label="Subconscious">&#x1f9e0; Subconscious</h1>
-    <p>Multi-Agent Conversation Persistence</p>
+    <p>Multi-Agent Conversation &amp; Schema Context Persistence</p>
   </header>
   <div id="filter-bar">
     <select id="status-filter">
