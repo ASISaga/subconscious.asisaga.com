@@ -1,7 +1,5 @@
 # Deploy workflow for ASISaga/subconscious.asisaga.com
 #
-# Copy this file to .github/workflows/deploy.yml in the subconscious.asisaga.com repository.
-#
 # Prerequisites — run once from ASISaga/aos-infrastructure:
 #   1. Deploy infrastructure:  workflow_dispatch on infrastructure-deploy.yml
 #      The Bicep templates create the Function App and its User-Assigned Managed
@@ -10,14 +8,9 @@
 #   3. Add the following secrets to each environment:
 #        AZURE_CLIENT_ID     — Managed identity client ID.
 #                              Retrieve from Key Vault after infrastructure provisioning:
-#                                python3 - <<'PYEOF'
-#                                import os
-#                                from azure.identity import DefaultAzureCredential
-#                                from azure.keyvault.secrets import SecretClient
-#                                cred = DefaultAzureCredential()
-#                                secret = SecretClient(vault_url="https://<kv-name>.vault.azure.net", credential=cred)
-#                                print(secret.get_secret("clientid-mcp-subconscious-<env>").value)
-#                                PYEOF
+#                                KV_URL=https://<kv>.vault.azure.net \
+#                                SECRET_NAME=clientid-mcp-subconscious-<env> \
+#                                python3 .github/scripts/get_kv_client_id.py
 #                              The Key Vault name is shown in the infrastructure deploy run summary.
 #                              On the first run, the infra_provisioned repository_dispatch event
 #                              triggers this workflow automatically with the client ID in the payload.
@@ -25,7 +18,18 @@
 #        AZURE_SUBSCRIPTION_ID — Azure subscription ID
 #   4. Optionally add variable AZURE_RESOURCE_GROUP (defaults to rg-aos-<env>)
 #
-# See deployment/workflow-templates/README.md in ASISaga/aos-infrastructure for full setup guide.
+# Trigger matrix:
+#   push to main          -> dev
+#   release published     -> prod
+#   workflow_dispatch     -> selected environment (dev / staging / prod)
+#   repository_dispatch   -> environment from infra_provisioned payload
+#
+# Design note — why direct steps instead of a reusable workflow call:
+#   GitHub Actions validates reusable-workflow jobs (uses:) at planning time.
+#   When every job in a workflow uses uses: and is gated by an if: condition,
+#   GitHub rejects the entire workflow at plan time — zero jobs run and no error
+#   is emitted (silent failure). Static-environment step-based jobs avoid that
+#   planning-time rejection and make environment-scoped secrets available.
 
 name: Deploy to Azure
 
@@ -39,7 +43,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment'
+        description: "Target environment"
         required: true
         type: choice
         options:
@@ -47,10 +51,6 @@ on:
           - staging
           - prod
         default: dev
-  # Triggered automatically by ASISaga/aos-infrastructure after successful
-  # Function App provisioning (Bicep Phase 4).  The payload includes the
-  # environment name and Key Vault URL so that this workflow can retrieve
-  # AZURE_CLIENT_ID without any manual secret setup.
   repository_dispatch:
     types:
       - infra_provisioned
@@ -60,43 +60,320 @@ permissions:
   contents: read
 
 jobs:
-  # GitHub Actions evaluates `if:` conditions that reference `needs.X.outputs.Y`
-  # only AFTER the upstream job runs, but it validates the workflow structure at
-  # planning time.  When every deploy job is gated on a `needs` output AND uses a
-  # reusable workflow (`uses:`), GitHub rejects the entire workflow at planning
-  # time — resulting in zero jobs and no error output (silent failure).
-  #
-  # Fix: use `github.event_name` / `github.event.*` / `inputs.*` directly in
-  # the `if:` conditions.  These values are available at planning time so GitHub
-  # can determine which deploy job to queue without waiting for a prior job.
-  # The `resolve-env` intermediary job is no longer needed.
-
   deploy-dev:
     name: Deploy (dev)
     if: >-
       github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev') ||
       (github.event_name == 'repository_dispatch' && github.event.client_payload.environment == 'dev')
+    runs-on: ubuntu-latest
     environment: dev
-    uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
-    with:
-      app-name: 'mcp-subconscious'
-      environment: 'dev'
-      key-vault-url: ${{ github.event.client_payload.key_vault_url || '' }}
-    secrets: inherit
+    env:
+      APP_NAME: mcp-subconscious
+      DEPLOY_ENV: dev
+      KEY_VAULT_URL: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.key_vault_url || '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log deployment context
+        shell: bash
+        run: |
+          echo "::group::Deployment context"
+          echo "  Application:  ${APP_NAME}"
+          echo "  Environment:  ${DEPLOY_ENV}"
+          echo "  Python:       3.11"
+          echo "  Ref:          ${{ github.ref }}"
+          echo "  SHA:          ${{ github.sha }}"
+          echo "  Triggered by: ${{ github.actor }}"
+          echo "  Event:        ${{ github.event_name }}"
+          if [[ -n "${KEY_VAULT_URL}" ]]; then
+            echo "  Key Vault:    ${KEY_VAULT_URL}"
+          else
+            echo "  Key Vault:    (using GitHub environment secret AZURE_CLIENT_ID)"
+          fi
+          echo "::endgroup::"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Azure SDK and build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::Installing Azure SDK and build tools"
+          pip install --upgrade pip
+          pip install \
+            azure-identity \
+            azure-keyvault-secrets \
+            azure-mgmt-web
+          echo "::endgroup::"
+
+      - name: Install application dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f requirements.txt ]]; then
+            echo "::error::requirements.txt not found — cannot install application dependencies"
+            exit 1
+          fi
+          echo "::group::Installing application dependencies into .python_packages"
+          pip install \
+            --target=".python_packages/lib/site-packages" \
+            --requirement requirements.txt \
+            --verbose
+          echo "--- Installed packages ---"
+          pip list --path=".python_packages/lib/site-packages" 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC — bootstrap for Key Vault)
+        if: env.KEY_VAULT_URL != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Retrieve AZURE_CLIENT_ID from Key Vault
+        id: kv_client_id
+        if: env.KEY_VAULT_URL != ''
+        shell: bash
+        env:
+          KV_URL: ${{ env.KEY_VAULT_URL }}
+          SECRET_NAME: clientid-mcp-subconscious-dev
+          FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          echo "::group::Retrieving AZURE_CLIENT_ID from Key Vault"
+          echo "  Key Vault URL: ${KV_URL}"
+          echo "  Secret name:   ${SECRET_NAME}"
+
+          CLIENT_ID=$(python3 .github/scripts/get_kv_client_id.py)
+
+          if [[ -n "${CLIENT_ID}" ]]; then
+            echo "client_id=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  AZURE_CLIENT_ID retrieved from Key Vault"
+          else
+            echo "client_id=${FALLBACK_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  Key Vault secret not found; using GitHub environment secret AZURE_CLIENT_ID"
+          fi
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: >-
+            ${{
+              steps.kv_client_id.outputs.client_id != ''
+              && steps.kv_client_id.outputs.client_id
+              || secrets.AZURE_CLIENT_ID
+            }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Function App name
+        id: resolve
+        shell: bash
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          export RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-aos-${DEPLOY_ENV}}"
+          export PREFIX="func-mcp-subconscious-${DEPLOY_ENV}-"
+
+          echo "::group::Resolving Azure Function App"
+          echo "  Subscription:   ${AZURE_SUBSCRIPTION_ID}"
+          echo "  Resource group: ${RESOURCE_GROUP}"
+          echo "  Name prefix:    ${PREFIX}"
+
+          FUNCTION_APP=$(python3 .github/scripts/resolve_function_app.py) || {
+            echo "::error::Run the infrastructure deployment from ASISaga/aos-infrastructure first."
+            echo "::endgroup::"
+            exit 1
+          }
+
+          echo "function_app=${FUNCTION_APP}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${RESOURCE_GROUP}" >> "$GITHUB_OUTPUT"
+          echo "  Target: ${FUNCTION_APP} (resource group: ${RESOURCE_GROUP})"
+          echo "::endgroup::"
+
+      - name: Deploy to Azure Function App
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ steps.resolve.outputs.function_app }}
+          package: .
+          respect-funcignore: true
+          scm-do-build-during-deployment: false
+
+      - name: Report deployment success
+        shell: bash
+        run: |
+          echo "::notice::${APP_NAME} deployed successfully"
+          echo "::notice::Environment:    ${DEPLOY_ENV}"
+          echo "::notice::Function App:   ${{ steps.resolve.outputs.function_app }}"
+          echo "::notice::Resource Group: ${{ steps.resolve.outputs.resource_group }}"
 
   deploy-staging:
     name: Deploy (staging)
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging') ||
       (github.event_name == 'repository_dispatch' && github.event.client_payload.environment == 'staging')
+    runs-on: ubuntu-latest
     environment: staging
-    uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
-    with:
-      app-name: 'mcp-subconscious'
-      environment: 'staging'
-      key-vault-url: ${{ github.event.client_payload.key_vault_url || '' }}
-    secrets: inherit
+    env:
+      APP_NAME: mcp-subconscious
+      DEPLOY_ENV: staging
+      KEY_VAULT_URL: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.key_vault_url || '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log deployment context
+        shell: bash
+        run: |
+          echo "::group::Deployment context"
+          echo "  Application:  ${APP_NAME}"
+          echo "  Environment:  ${DEPLOY_ENV}"
+          echo "  Python:       3.11"
+          echo "  Ref:          ${{ github.ref }}"
+          echo "  SHA:          ${{ github.sha }}"
+          echo "  Triggered by: ${{ github.actor }}"
+          echo "  Event:        ${{ github.event_name }}"
+          if [[ -n "${KEY_VAULT_URL}" ]]; then
+            echo "  Key Vault:    ${KEY_VAULT_URL}"
+          else
+            echo "  Key Vault:    (using GitHub environment secret AZURE_CLIENT_ID)"
+          fi
+          echo "::endgroup::"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Azure SDK and build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::Installing Azure SDK and build tools"
+          pip install --upgrade pip
+          pip install \
+            azure-identity \
+            azure-keyvault-secrets \
+            azure-mgmt-web
+          echo "::endgroup::"
+
+      - name: Install application dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f requirements.txt ]]; then
+            echo "::error::requirements.txt not found — cannot install application dependencies"
+            exit 1
+          fi
+          echo "::group::Installing application dependencies into .python_packages"
+          pip install \
+            --target=".python_packages/lib/site-packages" \
+            --requirement requirements.txt \
+            --verbose
+          echo "--- Installed packages ---"
+          pip list --path=".python_packages/lib/site-packages" 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC — bootstrap for Key Vault)
+        if: env.KEY_VAULT_URL != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Retrieve AZURE_CLIENT_ID from Key Vault
+        id: kv_client_id
+        if: env.KEY_VAULT_URL != ''
+        shell: bash
+        env:
+          KV_URL: ${{ env.KEY_VAULT_URL }}
+          SECRET_NAME: clientid-mcp-subconscious-staging
+          FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          echo "::group::Retrieving AZURE_CLIENT_ID from Key Vault"
+          echo "  Key Vault URL: ${KV_URL}"
+          echo "  Secret name:   ${SECRET_NAME}"
+
+          CLIENT_ID=$(python3 .github/scripts/get_kv_client_id.py)
+
+          if [[ -n "${CLIENT_ID}" ]]; then
+            echo "client_id=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  AZURE_CLIENT_ID retrieved from Key Vault"
+          else
+            echo "client_id=${FALLBACK_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  Key Vault secret not found; using GitHub environment secret AZURE_CLIENT_ID"
+          fi
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: >-
+            ${{
+              steps.kv_client_id.outputs.client_id != ''
+              && steps.kv_client_id.outputs.client_id
+              || secrets.AZURE_CLIENT_ID
+            }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Function App name
+        id: resolve
+        shell: bash
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          export RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-aos-${DEPLOY_ENV}}"
+          export PREFIX="func-mcp-subconscious-${DEPLOY_ENV}-"
+
+          echo "::group::Resolving Azure Function App"
+          echo "  Subscription:   ${AZURE_SUBSCRIPTION_ID}"
+          echo "  Resource group: ${RESOURCE_GROUP}"
+          echo "  Name prefix:    ${PREFIX}"
+
+          FUNCTION_APP=$(python3 .github/scripts/resolve_function_app.py) || {
+            echo "::error::Run the infrastructure deployment from ASISaga/aos-infrastructure first."
+            echo "::endgroup::"
+            exit 1
+          }
+
+          echo "function_app=${FUNCTION_APP}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${RESOURCE_GROUP}" >> "$GITHUB_OUTPUT"
+          echo "  Target: ${FUNCTION_APP} (resource group: ${RESOURCE_GROUP})"
+          echo "::endgroup::"
+
+      - name: Deploy to Azure Function App
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ steps.resolve.outputs.function_app }}
+          package: .
+          respect-funcignore: true
+          scm-do-build-during-deployment: false
+
+      - name: Report deployment success
+        shell: bash
+        run: |
+          echo "::notice::${APP_NAME} deployed successfully"
+          echo "::notice::Environment:    ${DEPLOY_ENV}"
+          echo "::notice::Function App:   ${{ steps.resolve.outputs.function_app }}"
+          echo "::notice::Resource Group: ${{ steps.resolve.outputs.resource_group }}"
 
   deploy-prod:
     name: Deploy (prod)
@@ -104,10 +381,154 @@ jobs:
       github.event_name == 'release' ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod') ||
       (github.event_name == 'repository_dispatch' && github.event.client_payload.environment == 'prod')
+    runs-on: ubuntu-latest
     environment: prod
-    uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
-    with:
-      app-name: 'mcp-subconscious'
-      environment: 'prod'
-      key-vault-url: ${{ github.event.client_payload.key_vault_url || '' }}
-    secrets: inherit
+    env:
+      APP_NAME: mcp-subconscious
+      DEPLOY_ENV: prod
+      KEY_VAULT_URL: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.key_vault_url || '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log deployment context
+        shell: bash
+        run: |
+          echo "::group::Deployment context"
+          echo "  Application:  ${APP_NAME}"
+          echo "  Environment:  ${DEPLOY_ENV}"
+          echo "  Python:       3.11"
+          echo "  Ref:          ${{ github.ref }}"
+          echo "  SHA:          ${{ github.sha }}"
+          echo "  Triggered by: ${{ github.actor }}"
+          echo "  Event:        ${{ github.event_name }}"
+          if [[ -n "${KEY_VAULT_URL}" ]]; then
+            echo "  Key Vault:    ${KEY_VAULT_URL}"
+          else
+            echo "  Key Vault:    (using GitHub environment secret AZURE_CLIENT_ID)"
+          fi
+          echo "::endgroup::"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Azure SDK and build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::Installing Azure SDK and build tools"
+          pip install --upgrade pip
+          pip install \
+            azure-identity \
+            azure-keyvault-secrets \
+            azure-mgmt-web
+          echo "::endgroup::"
+
+      - name: Install application dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f requirements.txt ]]; then
+            echo "::error::requirements.txt not found — cannot install application dependencies"
+            exit 1
+          fi
+          echo "::group::Installing application dependencies into .python_packages"
+          pip install \
+            --target=".python_packages/lib/site-packages" \
+            --requirement requirements.txt \
+            --verbose
+          echo "--- Installed packages ---"
+          pip list --path=".python_packages/lib/site-packages" 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC — bootstrap for Key Vault)
+        if: env.KEY_VAULT_URL != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Retrieve AZURE_CLIENT_ID from Key Vault
+        id: kv_client_id
+        if: env.KEY_VAULT_URL != ''
+        shell: bash
+        env:
+          KV_URL: ${{ env.KEY_VAULT_URL }}
+          SECRET_NAME: clientid-mcp-subconscious-prod
+          FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          echo "::group::Retrieving AZURE_CLIENT_ID from Key Vault"
+          echo "  Key Vault URL: ${KV_URL}"
+          echo "  Secret name:   ${SECRET_NAME}"
+
+          CLIENT_ID=$(python3 .github/scripts/get_kv_client_id.py)
+
+          if [[ -n "${CLIENT_ID}" ]]; then
+            echo "client_id=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  AZURE_CLIENT_ID retrieved from Key Vault"
+          else
+            echo "client_id=${FALLBACK_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+            echo "  Key Vault secret not found; using GitHub environment secret AZURE_CLIENT_ID"
+          fi
+          echo "::endgroup::"
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: >-
+            ${{
+              steps.kv_client_id.outputs.client_id != ''
+              && steps.kv_client_id.outputs.client_id
+              || secrets.AZURE_CLIENT_ID
+            }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Function App name
+        id: resolve
+        shell: bash
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          export RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-aos-${DEPLOY_ENV}}"
+          export PREFIX="func-mcp-subconscious-${DEPLOY_ENV}-"
+
+          echo "::group::Resolving Azure Function App"
+          echo "  Subscription:   ${AZURE_SUBSCRIPTION_ID}"
+          echo "  Resource group: ${RESOURCE_GROUP}"
+          echo "  Name prefix:    ${PREFIX}"
+
+          FUNCTION_APP=$(python3 .github/scripts/resolve_function_app.py) || {
+            echo "::error::Run the infrastructure deployment from ASISaga/aos-infrastructure first."
+            echo "::endgroup::"
+            exit 1
+          }
+
+          echo "function_app=${FUNCTION_APP}" >> "$GITHUB_OUTPUT"
+          echo "resource_group=${RESOURCE_GROUP}" >> "$GITHUB_OUTPUT"
+          echo "  Target: ${FUNCTION_APP} (resource group: ${RESOURCE_GROUP})"
+          echo "::endgroup::"
+
+      - name: Deploy to Azure Function App
+        uses: azure/functions-action@v1
+        with:
+          app-name: ${{ steps.resolve.outputs.function_app }}
+          package: .
+          respect-funcignore: true
+          scm-do-build-during-deployment: false
+
+      - name: Report deployment success
+        shell: bash
+        run: |
+          echo "::notice::${APP_NAME} deployed successfully"
+          echo "::notice::Environment:    ${DEPLOY_ENV}"
+          echo "::notice::Function App:   ${{ steps.resolve.outputs.function_app }}"
+          echo "::notice::Resource Group: ${{ steps.resolve.outputs.resource_group }}"
