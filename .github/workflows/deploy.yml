@@ -84,13 +84,45 @@ jobs:
             echo "key_vault_url=" >> "$GITHUB_OUTPUT"
           fi
 
-  deploy:
-    name: Deploy
+  # GitHub Actions does not support dynamic `environment:` expressions (e.g.
+  # ${{ needs.X.outputs.Y }}) when the job also calls a reusable workflow via
+  # `uses:`.  The environment name must be a static string so that GitHub can
+  # resolve environment secrets at workflow-planning time.  Three separate jobs
+  # (one per environment) with static names and `if:` guards replace the single
+  # dynamic job.
+
+  deploy-dev:
+    name: Deploy (dev)
     needs: resolve-env
-    environment: ${{ needs.resolve-env.outputs.environment }}
+    if: needs.resolve-env.outputs.environment == 'dev'
+    environment: dev
     uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
     with:
       app-name: 'mcp-subconscious'
-      environment: ${{ needs.resolve-env.outputs.environment }}
+      environment: 'dev'
+      key-vault-url: ${{ needs.resolve-env.outputs.key_vault_url }}
+    secrets: inherit
+
+  deploy-staging:
+    name: Deploy (staging)
+    needs: resolve-env
+    if: needs.resolve-env.outputs.environment == 'staging'
+    environment: staging
+    uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
+    with:
+      app-name: 'mcp-subconscious'
+      environment: 'staging'
+      key-vault-url: ${{ needs.resolve-env.outputs.key_vault_url }}
+    secrets: inherit
+
+  deploy-prod:
+    name: Deploy (prod)
+    needs: resolve-env
+    if: needs.resolve-env.outputs.environment == 'prod'
+    environment: prod
+    uses: ASISaga/aos-infrastructure/.github/workflows/deploy-function-app.yml@main
+    with:
+      app-name: 'mcp-subconscious'
+      environment: 'prod'
       key-vault-url: ${{ needs.resolve-env.outputs.key_vault_url }}
     secrets: inherit
