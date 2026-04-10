@@ -144,7 +144,7 @@ jobs:
         shell: bash
         env:
           KV_URL: ${{ env.KEY_VAULT_URL }}
-          SECRET_NAME: clientid-mcp-subconscious-dev
+          SECRET_NAME: clientid-mcp-subconscious-${{ env.DEPLOY_ENV }}
           FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         run: |
           set -euo pipefail
@@ -296,7 +296,7 @@ jobs:
         shell: bash
         env:
           KV_URL: ${{ env.KEY_VAULT_URL }}
-          SECRET_NAME: clientid-mcp-subconscious-staging
+          SECRET_NAME: clientid-mcp-subconscious-${{ env.DEPLOY_ENV }}
           FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         run: |
           set -euo pipefail
@@ -449,7 +449,7 @@ jobs:
         shell: bash
         env:
           KV_URL: ${{ env.KEY_VAULT_URL }}
-          SECRET_NAME: clientid-mcp-subconscious-prod
+          SECRET_NAME: clientid-mcp-subconscious-${{ env.DEPLOY_ENV }}
           FALLBACK_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         run: |
           set -euo pipefail
