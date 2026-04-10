@@ -23,6 +23,9 @@ dev = [
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["subconscious*"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
