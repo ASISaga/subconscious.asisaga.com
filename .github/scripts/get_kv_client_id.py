@@ -15,6 +15,11 @@ from __future__ import annotations
 
 import os
 import sys
+from urllib.parse import urlparse
+
+from azure.core.exceptions import AzureError
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 
 def main() -> None:
@@ -29,19 +34,11 @@ def main() -> None:
         sys.exit(1)
 
     # Log only the vault hostname (not the full URL) to avoid leaking path details.
-    try:
-        from urllib.parse import urlparse
-        vault_host = urlparse(kv_url).netloc or kv_url
-    except Exception:
-        vault_host = "(Key Vault)"
+    vault_host = urlparse(kv_url).netloc or kv_url or "(Key Vault)"
     print(f"Connecting to Key Vault host: {vault_host}", file=sys.stderr)
     print("Retrieving managed identity client ID from Key Vault", file=sys.stderr)
 
     try:
-        from azure.core.exceptions import AzureError
-        from azure.identity import DefaultAzureCredential
-        from azure.keyvault.secrets import SecretClient
-
         cred = DefaultAzureCredential()
         client = SecretClient(vault_url=kv_url, credential=cred)
         secret = client.get_secret(secret_name)

@@ -16,6 +16,9 @@ from __future__ import annotations
 import os
 import sys
 
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.web import WebSiteManagementClient
+
 
 def main() -> None:
     sub_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "").strip()
@@ -38,9 +41,6 @@ def main() -> None:
     print(f"Looking for apps with prefix '{prefix}'", file=sys.stderr)
 
     try:
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.web import WebSiteManagementClient
-
         cred = DefaultAzureCredential()
         client = WebSiteManagementClient(cred, sub_id)
         apps = list(client.web_apps.list_by_resource_group(rg))
