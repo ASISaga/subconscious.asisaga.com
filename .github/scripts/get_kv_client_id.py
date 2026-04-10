@@ -35,7 +35,7 @@ def main() -> None:
     except Exception:
         vault_host = "(Key Vault)"
     print(f"Connecting to Key Vault host: {vault_host}", file=sys.stderr)
-    print(f"Retrieving secret: {secret_name}", file=sys.stderr)
+    print("Retrieving managed identity client ID from Key Vault", file=sys.stderr)
 
     try:
         from azure.identity import DefaultAzureCredential
@@ -46,15 +46,16 @@ def main() -> None:
         secret = client.get_secret(secret_name)
         print("Secret retrieved successfully", file=sys.stderr)
         # Print the secret value to stdout so the caller can capture it.
-        # This is intentional — the value is subsequently stored in GITHUB_OUTPUT
-        # (masked by GitHub Actions) and never written to the workflow log.
+        # This is intentional — the caller writes it to GITHUB_OUTPUT, which
+        # GitHub Actions treats as a masked step output rather than log text.
         sys.stdout.write(secret.value)
     except Exception as exc:
         # Log only the exception type, not the message, to avoid leaking any
         # credential details that may appear in the Azure SDK error response.
         print(
-            f"Warning: could not retrieve secret '{secret_name}' from Key Vault"
-            f" ({type(exc).__name__}) — caller will fall back to GitHub secret",
+            "Warning: could not retrieve the managed identity client ID from "
+            f"Key Vault ({type(exc).__name__}) — caller will fall back to the "
+            "GitHub environment secret",
             file=sys.stderr,
         )
         # Exit 0 so the caller falls back to the GitHub environment secret.

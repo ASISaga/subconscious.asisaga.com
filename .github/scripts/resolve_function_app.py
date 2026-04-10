@@ -23,7 +23,12 @@ def main() -> None:
     prefix = os.environ.get("PREFIX", "").strip()
 
     # Collect all missing variables before exiting for better debugging.
-    missing = [name for value, name in [(sub_id, "AZURE_SUBSCRIPTION_ID"), (rg, "RESOURCE_GROUP"), (prefix, "PREFIX")] if not value]
+    required_values = [
+        ("AZURE_SUBSCRIPTION_ID", sub_id),
+        ("RESOURCE_GROUP", rg),
+        ("PREFIX", prefix),
+    ]
+    missing = [name for name, value in required_values if not value]
     if missing:
         for name in missing:
             print(f"::error::{name} environment variable is not set", file=sys.stderr)
