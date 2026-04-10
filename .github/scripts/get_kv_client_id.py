@@ -38,6 +38,7 @@ def main() -> None:
     print("Retrieving managed identity client ID from Key Vault", file=sys.stderr)
 
     try:
+        from azure.core.exceptions import AzureError
         from azure.identity import DefaultAzureCredential
         from azure.keyvault.secrets import SecretClient
 
@@ -48,8 +49,8 @@ def main() -> None:
         # Print the secret value to stdout so the caller can capture it.
         # This is intentional — the caller writes it to GITHUB_OUTPUT, which
         # GitHub Actions treats as a masked step output rather than log text.
-        sys.stdout.write(secret.value)
-    except Exception as exc:
+        print(secret.value)
+    except AzureError as exc:
         # Log only the exception type, not the message, to avoid leaking any
         # credential details that may appear in the Azure SDK error response.
         print(

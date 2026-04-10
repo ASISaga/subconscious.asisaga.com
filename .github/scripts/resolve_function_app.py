@@ -47,7 +47,7 @@ def main() -> None:
 
         print(f"Found {len(apps)} app(s) in resource group:", file=sys.stderr)
         for app in apps:
-            app_name = app.name or ""
+            app_name = getattr(app, "name", "") or ""
             print(f"  {app_name}", file=sys.stderr)
             if app_name.startswith(prefix):
                 print(f"Matched: {app_name}", file=sys.stderr)
