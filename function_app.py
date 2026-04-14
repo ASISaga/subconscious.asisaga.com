@@ -8,4 +8,5 @@ from subconscious.app import create_app
 app = func.AsgiFunctionApp(
     app=create_app(),
     http_auth_level=func.AuthLevel.ANONYMOUS,
+    route="{*route}"  # Crucial: captures all sub-paths for Starlette
 )
