@@ -115,7 +115,7 @@ conversations_app = FastMCPApp("Conversations")
 
 
 @conversations_app.tool()
-def load_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
+def fetch_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
     """Load all orchestrations as Schema.org Action JSON-LD documents.
 
     Called by the Conversations UI to populate the orchestration list.
@@ -131,7 +131,7 @@ def load_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
 
 
 @conversations_app.tool()
-def load_conversation(orchestration_id: str) -> dict[str, Any]:
+def fetch_conversation(orchestration_id: str) -> dict[str, Any]:
     """Load a full conversation as a Schema.org Conversation JSON-LD document.
 
     Called by the Conversations UI when the user selects an orchestration.
@@ -169,7 +169,7 @@ def show_conversations(status: str | None = None) -> Any:
     from prefab_ui.components.row import Row
     from prefab_ui.components.text import Text
 
-    orchestrations = load_orchestrations(status)
+    orchestrations = fetch_orchestrations(status)
 
     # Build the orchestrations table rows
     rows = []
@@ -177,13 +177,10 @@ def show_conversations(status: str | None = None) -> Any:
         action_status = o.get("actionStatus", "")
         if "Completed" in action_status:
             status_label = "Completed"
-            badge_variant = "success"
         elif "Failed" in action_status:
             status_label = "Failed"
-            badge_variant = "destructive"
         else:
             status_label = "Active"
-            badge_variant = "default"
 
         agents = o.get("agents", [])
         agents_str = ", ".join(agents) if agents else "—"
@@ -204,9 +201,10 @@ def show_conversations(status: str | None = None) -> Any:
     with PrefabApp(
         title=title,
         state={
+            # Populated on mount by load_orchestrations / load_conversation calls
             "orchestrations": rows,
-            "selected_id": None,
-            "conversation": None,
+            "selected_id": None,       # set by UI when user clicks a row
+            "conversation": None,      # set by fetch_conversation backend tool
         },
     ) as app:
         with Column(css_class="p-6 gap-6"):
@@ -246,7 +244,7 @@ def show_conversations(status: str | None = None) -> Any:
                     with CardContent(css_class="py-4"):
                         Text(
                             "Select an orchestration above to load its full conversation. "
-                            "Use the 'load_conversation' tool with the orchestration ID.",
+                            "Use the 'fetch_conversation' tool with the orchestration ID.",
                             css_class="text-sm text-muted-foreground",
                         )
 

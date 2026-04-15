@@ -151,34 +151,34 @@ class TestMCPConversationTools:
 class TestMCPAppsConversations:
     """Verify the Conversations FastMCPApp backend tools work correctly.
 
-    ``load_orchestrations`` and ``load_conversation`` have visibility=[\"app\"]
+    ``fetch_orchestrations`` and ``fetch_conversation`` have visibility=[\"app\"]
     and are intentionally hidden from the model.  We test them by calling the
     registered Python functions directly.
     """
 
     def test_load_orchestrations_returns_jsonld(self):
-        from subconscious.server import load_orchestrations
+        from subconscious.server import fetch_orchestrations
         storage.create_orchestration("app-lo-1", "App test orch")
-        data = load_orchestrations()
+        data = fetch_orchestrations()
         assert isinstance(data, list)
         assert data[0]["@type"] == "Action"
         assert "@context" in data[0]
 
     def test_load_orchestrations_filter_by_status(self):
-        from subconscious.server import load_orchestrations
+        from subconscious.server import fetch_orchestrations
         storage.create_orchestration("app-active", "Active orch")
         storage.create_orchestration("app-done", "Completed orch")
         storage.update_orchestration_status("app-done", "completed")
-        data = load_orchestrations(status="completed")
+        data = fetch_orchestrations(status="completed")
         ids = [o["orchestration_id"] for o in data]
         assert "app-done" in ids
         assert "app-active" not in ids
 
     def test_load_conversation_returns_jsonld_conversation(self):
-        from subconscious.server import load_conversation
+        from subconscious.server import fetch_conversation
         storage.create_orchestration("app-conv-1", "App conv test")
         storage.persist_message("app-conv-1", "cfo", "assistant", "Budget is on track.")
-        data = load_conversation("app-conv-1")
+        data = fetch_conversation("app-conv-1")
         assert data["@type"] == "Conversation"
         assert data["@context"] == "https://schema.org/"
         assert data["orchestration_id"] == "app-conv-1"
@@ -188,9 +188,9 @@ class TestMCPAppsConversations:
         assert msg["sender"]["identifier"] == "cfo"
 
     def test_load_conversation_empty(self):
-        from subconscious.server import load_conversation
+        from subconscious.server import fetch_conversation
         storage.create_orchestration("app-empty", "Empty conv")
-        data = load_conversation("app-empty")
+        data = fetch_conversation("app-empty")
         assert data["total"] == 0
         assert data["messages"] == []
 
