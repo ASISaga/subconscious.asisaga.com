@@ -101,7 +101,7 @@ def _load_demo_schema_context(schema_name: str, context_id: str) -> dict[str, An
                 "data": doc,
                 "updated_at": doc.get("dateModified", ""),
             }
-        except Exception as exc:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
             logger.warning("Failed to load demo context %s: %s", primary.name, exc)
     # Fallback: scan all files
     for path in data_dir.glob("*.json"):
@@ -116,7 +116,7 @@ def _load_demo_schema_context(schema_name: str, context_id: str) -> dict[str, An
                     "data": doc,
                     "updated_at": doc.get("dateModified", ""),
                 }
-        except Exception as exc:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
             logger.warning("Failed to scan demo context %s: %s", path.name, exc)
     return None
 
@@ -139,7 +139,7 @@ def _list_demo_schema_contexts(schema_name: str | None = None) -> list[dict[str,
                 "context_id": ctx_id,
                 "updated_at": doc.get("dateModified", ""),
             })
-        except Exception as exc:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
             logger.warning("Failed to list demo context %s: %s", path.name, exc)
     return results
 

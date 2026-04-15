@@ -174,7 +174,7 @@ def api_schema_context(
     logger.debug("Store schema-context %s/%s", schema_name, context_id)
     try:
         body = req.get_json()
-    except (ValueError, TypeError):
+    except ValueError:
         return func.HttpResponse(
             json.dumps({"error": "Invalid JSON body"}),
             status_code=400,
@@ -192,7 +192,7 @@ def api_schema_context(
 def homepage(req: func.HttpRequest) -> func.HttpResponse:
     """Serve the built-in MCP Apps single-page UI."""
     logger.debug("Serving homepage")
-    return func.HttpResponse(handlers._APP_HTML, mimetype="text/html")
+    return func.HttpResponse(handlers.get_app_html(), mimetype="text/html")
 
 
 # ---------------------------------------------------------------------------

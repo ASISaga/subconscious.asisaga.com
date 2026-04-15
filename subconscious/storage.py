@@ -123,7 +123,7 @@ def _load_demo_conversations_dir() -> list[dict[str, Any]]:
     for path in sorted(data_dir.glob("*.json")):
         try:
             docs.append(json.loads(path.read_text(encoding="utf-8")))
-        except Exception as exc:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
             logger.warning("Failed to load demo conversation %s: %s", path.name, exc)
     return docs
 

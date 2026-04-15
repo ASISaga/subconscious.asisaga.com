@@ -158,6 +158,11 @@ def store_schema_context(
 # Embedded single-page MCP Apps UI
 # ---------------------------------------------------------------------------
 
+def get_app_html() -> str:
+    """Return the embedded single-page MCP Apps UI HTML."""
+    return _APP_HTML
+
+
 _APP_HTML = """\
 <!DOCTYPE html>
 <html lang="en">

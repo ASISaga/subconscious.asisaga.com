@@ -161,11 +161,12 @@ class TestSchemaContextsHandlers:
 
 class TestAppHtml:
     def test_app_html_exists(self):
-        assert isinstance(handlers._APP_HTML, str)
-        assert len(handlers._APP_HTML) > 0
+        html = handlers.get_app_html()
+        assert isinstance(html, str)
+        assert len(html) > 0
 
     def test_app_html_contains_ui_elements(self):
-        html = handlers._APP_HTML
+        html = handlers.get_app_html()
         assert "Subconscious" in html
         assert "orch-list" in html
         assert "/mcp" in html
