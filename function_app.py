@@ -1,12 +1,17 @@
 import azure.functions as func
+import logging
 
-from subconscious.app import create_app
+try:
+    from subconscious.app import create_app
+    subconscious_app = create_app()
+except Exception as e:
+    logging.error(f"Failed to initialize Subconscious: {e}")
+    # Fallback to a tiny Starlette app just to keep the worker alive
+    from starlette.applications import Starlette
+    subconscious_app = Starlette()
 
-# Expose the combined ASGI application (MCP endpoint + REST API + UI) as an
-# Azure Functions app.  The MCP streamable-HTTP endpoint lives at /mcp,
-# the REST API at /api/*, and the MCP Apps UI at /.
 app = func.AsgiFunctionApp(
-    app=create_app(),
+    app=subconscious_app,
     http_auth_level=func.AuthLevel.ANONYMOUS,
-    route="{*route}"  # Crucial: captures all sub-paths for Starlette
+    route="{*route}"
 )
