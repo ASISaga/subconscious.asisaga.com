@@ -197,7 +197,11 @@ jobs:
             exit 1
           fi
           echo "::group::Installing application dependencies into .python_packages"
+          # Flex Consumption requires client-side packaging: all deps must be
+          # bundled into .python_packages/lib/site-packages on a Linux runner
+          # so that binary extensions are compatible with the Azure host OS.
           pip install \
+            --upgrade \
             --target=".python_packages/lib/site-packages" \
             --requirement requirements.txt \
             --verbose
@@ -284,6 +288,23 @@ jobs:
           echo "function_app=${FUNCTION_APP}"     >> "$GITHUB_OUTPUT"
           echo "resource_group=${RESOURCE_GROUP}" >> "$GITHUB_OUTPUT"
           echo "  Target: ${FUNCTION_APP} (resource group: ${RESOURCE_GROUP})"
+          echo "::endgroup::"
+
+      - name: Configure PYTHONPATH for Flex Consumption
+        shell: bash
+        env:
+          FUNCTION_APP: ${{ steps.resolve.outputs.function_app }}
+          RESOURCE_GROUP: ${{ steps.resolve.outputs.resource_group }}
+        run: |
+          set -euo pipefail
+          echo "::group::Setting PYTHONPATH app setting"
+          # Flex Consumption mounts code as a read-only SquashFS image; the
+          # Python worker must find pre-bundled packages at this exact path.
+          az functionapp config appsettings set \
+            --name "${FUNCTION_APP}" \
+            --resource-group "${RESOURCE_GROUP}" \
+            --settings "PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages"
+          echo "  PYTHONPATH=/home/site/wwwroot/.python_packages/lib/site-packages"
           echo "::endgroup::"
 
       - name: Deploy to Azure Function App
