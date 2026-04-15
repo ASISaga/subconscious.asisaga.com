@@ -98,9 +98,9 @@ jobs:
 
           case "${{ github.event_name }}" in
             push)
-              ENV="dev"
+              ENV="staging"
               KV_URL=""
-              echo "::notice::Push to main detected — targeting dev environment"
+              echo "::notice::Push to main detected — targeting staging environment"
               ;;
             release)
               ENV="prod"

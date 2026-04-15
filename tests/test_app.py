@@ -1,191 +1,172 @@
-"""Tests for subconscious.app — ASGI application (REST API + UI)."""
+"""Tests for subconscious.app — pure-Python handler functions (no Starlette)."""
 
 from __future__ import annotations
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 
 from subconscious import schema_storage, storage
-from subconscious.app import create_app
+from subconscious import app as handlers
 
 
-@pytest.fixture()
-def app():
-    return create_app()
+class TestHealthHandler:
+    def test_health_returns_healthy(self):
+        result = handlers.get_health()
+        assert result["status"] == "healthy"
+        assert result["service"] == "subconscious"
+
+    def test_health_has_jsonld_context(self):
+        result = handlers.get_health()
+        assert result["@context"] == "https://schema.org/"
+        assert result["@type"] == "HealthAspect"
 
 
-@pytest.fixture()
-async def client(app):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
+class TestOrchestrationsHandlers:
+    def test_list_empty(self):
+        result = handlers.list_orchestrations()
+        assert result == []
+
+    def test_list_with_data(self):
+        storage.create_orchestration("h-1", "Purpose A")
+        storage.create_orchestration("h-2", "Purpose B")
+        result = handlers.list_orchestrations()
+        assert len(result) == 2
+
+    def test_list_has_jsonld_annotations(self):
+        storage.create_orchestration("h-3", "Test")
+        result = handlers.list_orchestrations()
+        assert len(result) == 1
+        item = result[0]
+        assert item["@context"] == "https://schema.org/"
+        assert item["@type"] == "Action"
+        assert "actionStatus" in item
+        assert item["orchestration_id"] == "h-3"
+
+    def test_list_filter_by_status(self):
+        storage.create_orchestration("h-4", "Active one")
+        storage.create_orchestration("h-5", "Completed one")
+        storage.update_orchestration_status("h-5", "completed")
+        result = handlers.list_orchestrations(status="completed")
+        assert len(result) == 1
+        assert result[0]["orchestration_id"] == "h-5"
+
+    def test_get_orchestration_found(self):
+        storage.create_orchestration("h-6", "Detail test")
+        result = handlers.get_orchestration("h-6")
+        assert result is not None
+        assert result["orchestration_id"] == "h-6"
+        assert result["@type"] == "Action"
+
+    def test_get_orchestration_not_found(self):
+        result = handlers.get_orchestration("nonexistent")
+        assert result is None
+
+    def test_action_status_mapping_active(self):
+        storage.create_orchestration("h-7", "Active")
+        result = handlers.get_orchestration("h-7")
+        assert result["actionStatus"] == "https://schema.org/ActiveActionStatus"
+
+    def test_action_status_mapping_completed(self):
+        storage.create_orchestration("h-8", "Completed")
+        storage.update_orchestration_status("h-8", "completed")
+        result = handlers.get_orchestration("h-8")
+        assert result["actionStatus"] == "https://schema.org/CompletedActionStatus"
 
 
-class TestHealthEndpoint:
-    @pytest.mark.asyncio
-    async def test_health(self, client):
-        resp = await client.get("/api/health")
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["status"] == "healthy"
-        assert body["service"] == "subconscious"
+class TestConversationHandlers:
+    def test_get_conversation_empty(self):
+        result = handlers.get_conversation("empty-orch")
+        assert result["orchestration_id"] == "empty-orch"
+        assert result["messages"] == []
+        assert result["total"] == 0
+        assert result["@type"] == "Conversation"
 
+    def test_get_conversation_with_messages(self):
+        storage.create_orchestration("c-1", "Conv test")
+        storage.persist_message("c-1", "agent-a", "user", "Hello")
+        storage.persist_message("c-1", "agent-b", "assistant", "Hi there")
+        result = handlers.get_conversation("c-1")
+        assert result["total"] == 2
+        assert len(result["messages"]) == 2
 
-class TestHomepageUI:
-    @pytest.mark.asyncio
-    async def test_homepage_returns_html(self, client):
-        resp = await client.get("/")
-        assert resp.status_code == 200
-        assert "text/html" in resp.headers["content-type"]
-        assert "Subconscious" in resp.text
-        assert "/mcp" in resp.text
+    def test_messages_have_jsonld_annotations(self):
+        storage.create_orchestration("c-2", "JSON-LD test")
+        storage.persist_message("c-2", "agent-x", "user", "Test message")
+        result = handlers.get_conversation("c-2")
+        msg = result["messages"][0]
+        assert msg["@type"] == "Message"
+        assert msg["agent_id"] == "agent-x"
+        assert msg["content"] == "Test message"
+        assert "sender" in msg
+        assert msg["sender"]["identifier"] == "agent-x"
+        assert msg["text"] == "Test message"
 
-    @pytest.mark.asyncio
-    async def test_homepage_contains_ui_elements(self, client):
-        resp = await client.get("/")
-        html = resp.text
-        assert "orch-list" in html
-        assert "conversation" in html
-        assert "/api" in html
-
-
-class TestOrchestrationsAPI:
-    @pytest.mark.asyncio
-    async def test_list_empty(self, client):
-        resp = await client.get("/api/orchestrations")
-        assert resp.status_code == 200
-        assert resp.json() == []
-
-    @pytest.mark.asyncio
-    async def test_list_with_data(self, client):
-        storage.create_orchestration("api-1", "Purpose A")
-        storage.create_orchestration("api-2", "Purpose B")
-        resp = await client.get("/api/orchestrations")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert len(data) == 2
-
-    @pytest.mark.asyncio
-    async def test_list_filter_by_status(self, client):
-        storage.create_orchestration("api-3", "Active one")
-        storage.create_orchestration("api-4", "Completed one")
-        storage.update_orchestration_status("api-4", "completed")
-        resp = await client.get("/api/orchestrations?status=completed")
-        data = resp.json()
-        assert len(data) == 1
-        assert data[0]["orchestration_id"] == "api-4"
-
-    @pytest.mark.asyncio
-    async def test_get_orchestration(self, client):
-        storage.create_orchestration("api-5", "Detail test")
-        resp = await client.get("/api/orchestrations/api-5")
-        assert resp.status_code == 200
-        assert resp.json()["orchestration_id"] == "api-5"
-
-    @pytest.mark.asyncio
-    async def test_get_orchestration_not_found(self, client):
-        resp = await client.get("/api/orchestrations/nonexistent")
-        assert resp.status_code == 404
-
-
-class TestConversationAPI:
-    @pytest.mark.asyncio
-    async def test_get_messages(self, client):
-        storage.create_orchestration("msg-1", "Messages test")
-        storage.persist_message("msg-1", "a", "user", "Hello")
-        storage.persist_message("msg-1", "b", "assistant", "Hi there")
-        resp = await client.get("/api/orchestrations/msg-1/messages")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["orchestration_id"] == "msg-1"
-        assert data["total"] == 2
-        assert len(data["messages"]) == 2
-
-    @pytest.mark.asyncio
-    async def test_get_messages_with_limit(self, client):
-        storage.create_orchestration("msg-2", "Limit test")
+    def test_get_conversation_with_limit(self):
+        storage.create_orchestration("c-3", "Limit test")
         for i in range(5):
-            storage.persist_message("msg-2", "a", "user", f"msg-{i}")
-        resp = await client.get("/api/orchestrations/msg-2/messages?limit=2")
-        data = resp.json()
-        assert data["total"] == 2
-
-    @pytest.mark.asyncio
-    async def test_get_messages_empty(self, client):
-        resp = await client.get("/api/orchestrations/empty/messages")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["messages"] == []
+            storage.persist_message("c-3", "a", "user", f"msg-{i}")
+        result = handlers.get_conversation("c-3", limit=2)
+        assert result["total"] == 2
 
 
-class TestSchemasAPI:
-    @pytest.mark.asyncio
-    async def test_list_schemas(self, client, schemas_dir):
-        resp = await client.get("/api/schemas")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert len(data) == 7
-        names = {s["name"] for s in data}
+class TestSchemasHandlers:
+    def test_list_schemas(self, schemas_dir):
+        result = handlers.list_schemas()
+        assert len(result) == 7
+        names = {s["name"] for s in result}
         assert "manas" in names
         assert "buddhi" in names
         assert "chitta" in names
 
-    @pytest.mark.asyncio
-    async def test_get_schema_known(self, client, schemas_dir):
-        resp = await client.get("/api/schemas/manas")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["title"] == "Manas — Agent Memory State"
+    def test_get_schema_known(self, schemas_dir):
+        result = handlers.get_schema("manas")
+        assert result is not None
+        assert result["title"] == "Manas — Agent Memory State"
 
-    @pytest.mark.asyncio
-    async def test_get_schema_not_found(self, client, schemas_dir):
-        resp = await client.get("/api/schemas/unknown")
-        assert resp.status_code == 404
-        body = resp.json()
-        assert "error" in body
-        assert "available" in body
+    def test_get_schema_not_found(self, schemas_dir):
+        result = handlers.get_schema("unknown")
+        assert result is None
+
+    def test_get_schema_available(self):
+        available = handlers.get_schema_available()
+        assert "manas" in available
+        assert "buddhi" in available
+        assert len(available) == 7
 
 
-class TestSchemaContextsAPI:
-    @pytest.mark.asyncio
-    async def test_list_schema_contexts_empty(self, client):
-        resp = await client.get("/api/schema-contexts")
-        assert resp.status_code == 200
-        assert resp.json() == []
+class TestSchemaContextsHandlers:
+    def test_list_schema_contexts_empty(self):
+        result = handlers.list_schema_contexts()
+        assert result == []
 
-    @pytest.mark.asyncio
-    async def test_store_and_get_schema_context(self, client, schemas_dir):
+    def test_store_and_get_schema_context(self, schemas_dir):
         doc = {"@type": "Buddhi", "agent_id": "ceo", "name": "Steve Jobs"}
-        put_resp = await client.put("/api/schema-contexts/buddhi/ceo", json=doc)
-        assert put_resp.status_code == 200
-        put_data = put_resp.json()
-        assert put_data["schema_name"] == "buddhi"
-        assert put_data["context_id"] == "ceo"
+        put_result = handlers.store_schema_context("buddhi", "ceo", doc)
+        assert put_result["schema_name"] == "buddhi"
+        assert put_result["context_id"] == "ceo"
 
-        get_resp = await client.get("/api/schema-contexts/buddhi/ceo")
-        assert get_resp.status_code == 200
-        get_data = get_resp.json()
-        assert get_data["data"] == doc
+        get_result = handlers.get_schema_context("buddhi", "ceo")
+        assert get_result is not None
+        assert get_result["data"] == doc
 
-    @pytest.mark.asyncio
-    async def test_get_schema_context_not_found(self, client):
-        resp = await client.get("/api/schema-contexts/manas/ghost")
-        assert resp.status_code == 404
+    def test_get_schema_context_not_found(self):
+        result = handlers.get_schema_context("manas", "ghost")
+        assert result is None
 
-    @pytest.mark.asyncio
-    async def test_list_schema_contexts_after_store(self, client, schemas_dir):
+    def test_list_schema_contexts_after_store(self, schemas_dir):
         schema_storage.store_schema_context("manas", "ceo", {})
         schema_storage.store_schema_context("manas", "cfo", {})
-        resp = await client.get("/api/schema-contexts?schema=manas")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert len(data) == 2
+        result = handlers.list_schema_contexts("manas")
+        assert len(result) == 2
 
-    @pytest.mark.asyncio
-    async def test_store_schema_context_invalid_json(self, client):
-        resp = await client.put(
-            "/api/schema-contexts/buddhi/ceo",
-            content=b"not-json",
-            headers={"Content-Type": "application/json"},
-        )
-        assert resp.status_code == 400
+
+class TestAppHtml:
+    def test_app_html_exists(self):
+        assert isinstance(handlers._APP_HTML, str)
+        assert len(handlers._APP_HTML) > 0
+
+    def test_app_html_contains_ui_elements(self):
+        html = handlers._APP_HTML
+        assert "Subconscious" in html
+        assert "orch-list" in html
+        assert "/mcp" in html
+        assert "<!DOCTYPE html>" in html

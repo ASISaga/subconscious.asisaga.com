@@ -8,7 +8,6 @@ dependencies = [
     "fastmcp>=3.0",
     "azure-data-tables",
     "azure-identity",
-    "starlette",
 ]
 
 [project.optional-dependencies]

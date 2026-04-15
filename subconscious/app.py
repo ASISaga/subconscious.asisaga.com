@@ -1,153 +1,161 @@
-"""ASGI application factory — combines MCP endpoint, REST API, and web UI.
+"""HTTP handler functions for the Subconscious REST API.
 
-The application is structured as a single Starlette ASGI app that mounts:
+All handlers are plain synchronous Python functions that return JSON-serialisable
+dicts or lists — no framework dependency.  The Azure Functions layer in
+``function_app.py`` calls these functions and serialises the results.
 
-* ``/mcp``  — Streamable-HTTP MCP endpoint (FastMCP)
-* ``/api``  — Lightweight JSON API consumed by the built-in UI
-* ``/``     — Single-page MCP Apps UI for browsing orchestrations
+Responses conform to **Schema.org JSON-LD**: every dict response includes
+``@context`` and ``@type`` annotations so that MCP clients and browser tools
+can consume the data as linked data.
 """
 
 from __future__ import annotations
 
 import logging
-
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
-from starlette.routing import Mount, Route
+from typing import Any
 
 from subconscious import schema_storage, storage
-from subconscious.server import mcp
 
 logger = logging.getLogger(__name__)
 
+_SCHEMA_ORG = "https://schema.org/"
 
-# ---------------------------------------------------------------------------
-# REST API handlers — orchestrations (consumed by the built-in UI)
-# ---------------------------------------------------------------------------
-
-async def api_list_orchestrations(request: Request) -> JSONResponse:
-    """``GET /api/orchestrations[?status=active]``"""
-    status = request.query_params.get("status")
-    data = storage.list_orchestrations(status)
-    return JSONResponse(data)
-
-
-async def api_get_orchestration(request: Request) -> JSONResponse:
-    """``GET /api/orchestrations/{oid}``"""
-    oid = request.path_params["oid"]
-    data = storage.get_orchestration(oid)
-    if data is None:
-        return JSONResponse({"error": "Not found"}, status_code=404)
-    return JSONResponse(data)
-
-
-async def api_get_conversation(request: Request) -> JSONResponse:
-    """``GET /api/orchestrations/{oid}/messages[?limit=200]``"""
-    oid = request.path_params["oid"]
-    limit = int(request.query_params.get("limit", "200"))
-    messages = storage.get_conversation(oid, limit=limit)
-    return JSONResponse({"orchestration_id": oid, "messages": messages, "total": len(messages)})
+# Map orchestration status strings to Schema.org ActionStatus URIs
+_ACTION_STATUS = {
+    "active": "https://schema.org/ActiveActionStatus",
+    "completed": "https://schema.org/CompletedActionStatus",
+    "failed": "https://schema.org/FailedActionStatus",
+}
 
 
 # ---------------------------------------------------------------------------
-# REST API handlers — schema definitions (read-only)
+# Internal helpers
 # ---------------------------------------------------------------------------
 
-async def api_list_schemas(request: Request) -> JSONResponse:
-    """``GET /api/schemas``"""
-    return JSONResponse(schema_storage.list_schemas())
+def _orchestration_to_jsonld(orch: dict[str, Any]) -> dict[str, Any]:
+    """Annotate an orchestration dict with Schema.org JSON-LD fields."""
+    status_uri = _ACTION_STATUS.get(orch.get("status", ""), _ACTION_STATUS["active"])
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Action",
+        "@id": f"subconscious://orchestrations/{orch['orchestration_id']}",
+        "actionStatus": status_uri,
+        **orch,
+    }
 
 
-async def api_get_schema(request: Request) -> JSONResponse:
-    """``GET /api/schemas/{name}``"""
-    name = request.path_params["name"]
-    data = schema_storage.get_schema(name)
-    if data is None:
-        available = list(schema_storage.SCHEMA_REGISTRY.keys())
-        return JSONResponse({"error": "Schema not found", "available": available}, status_code=404)
-    return JSONResponse(data)
-
-
-# ---------------------------------------------------------------------------
-# REST API handlers — schema contexts
-# ---------------------------------------------------------------------------
-
-async def api_list_schema_contexts(request: Request) -> JSONResponse:
-    """``GET /api/schema-contexts[?schema=manas]``"""
-    schema_name = request.query_params.get("schema")
-    data = schema_storage.list_schema_contexts(schema_name)
-    return JSONResponse(data)
-
-
-async def api_get_schema_context(request: Request) -> JSONResponse:
-    """``GET /api/schema-contexts/{schema_name}/{context_id}``"""
-    schema_name = request.path_params["schema_name"]
-    context_id = request.path_params["context_id"]
-    result = schema_storage.get_schema_context(schema_name, context_id)
-    if result is None:
-        return JSONResponse({"error": "Schema context not found"}, status_code=404)
-    return JSONResponse(result)
-
-
-async def api_store_schema_context(request: Request) -> JSONResponse:
-    """``PUT /api/schema-contexts/{schema_name}/{context_id}``"""
-    schema_name = request.path_params["schema_name"]
-    context_id = request.path_params["context_id"]
-    try:
-        body = await request.json()
-    except Exception:
-        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
-    result = schema_storage.store_schema_context(schema_name, context_id, body)
-    return JSONResponse(result)
+def _message_to_jsonld(msg: dict[str, Any]) -> dict[str, Any]:
+    """Annotate a message dict with Schema.org JSON-LD fields."""
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Message",
+        "@id": f"subconscious://messages/{msg['orchestration_id']}/{msg['sequence']}",
+        "sender": {"@type": "Person", "identifier": msg.get("agent_id", "")},
+        "dateCreated": msg.get("created_at", ""),
+        "text": msg.get("content", ""),
+        **msg,
+    }
 
 
 # ---------------------------------------------------------------------------
-# Health check
+# Health
 # ---------------------------------------------------------------------------
 
-async def api_health(request: Request) -> JSONResponse:
-    """``GET /api/health``"""
-    return JSONResponse({"status": "healthy", "service": "subconscious"})
-
-
-# ---------------------------------------------------------------------------
-# MCP Apps UI (single-page HTML application)
-# ---------------------------------------------------------------------------
-
-async def homepage(request: Request) -> HTMLResponse:
-    """Serve the built-in MCP Apps UI."""
-    return HTMLResponse(_APP_HTML)
+def get_health() -> dict[str, Any]:
+    """Return service health status as a Schema.org HealthAspect document."""
+    logger.debug("Health check")
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "HealthAspect",
+        "status": "healthy",
+        "service": "subconscious",
+    }
 
 
 # ---------------------------------------------------------------------------
-# Application factory
+# Orchestrations
 # ---------------------------------------------------------------------------
 
-def create_app() -> Starlette:
-    """Build and return the composite ASGI application."""
-    mcp_app = mcp.http_app()
+def list_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
+    """Return all orchestrations as a list of Schema.org Action documents."""
+    logger.debug("Listing orchestrations, status=%s", status)
+    raw = storage.list_orchestrations(status)
+    return [_orchestration_to_jsonld(o) for o in raw]
 
-    routes = [
-        Route("/", homepage),
-        Route("/api/health", api_health),
-        Route("/api/orchestrations", api_list_orchestrations),
-        Route("/api/orchestrations/{oid}", api_get_orchestration),
-        Route("/api/orchestrations/{oid}/messages", api_get_conversation),
-        Route("/api/schemas", api_list_schemas),
-        Route("/api/schemas/{name}", api_get_schema),
-        Route("/api/schema-contexts", api_list_schema_contexts),
-        Route("/api/schema-contexts/{schema_name}/{context_id}", api_get_schema_context,
-              methods=["GET"]),
-        Route("/api/schema-contexts/{schema_name}/{context_id}", api_store_schema_context,
-              methods=["PUT"]),
-        Mount("/mcp", app=mcp_app),
-    ]
-    return Starlette(routes=routes)
+
+def get_orchestration(orchestration_id: str) -> dict[str, Any] | None:
+    """Return a single orchestration or ``None`` if not found."""
+    logger.debug("Getting orchestration %s", orchestration_id)
+    raw = storage.get_orchestration(orchestration_id)
+    if raw is None:
+        return None
+    return _orchestration_to_jsonld(raw)
+
+
+def get_conversation(orchestration_id: str, limit: int = 200) -> dict[str, Any]:
+    """Return messages for an orchestration wrapped in a Schema.org Conversation."""
+    logger.debug("Getting conversation %s, limit=%d", orchestration_id, limit)
+    raw_msgs = storage.get_conversation(orchestration_id, limit=limit)
+    messages = [_message_to_jsonld(m) for m in raw_msgs]
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Conversation",
+        "@id": f"subconscious://conversations/{orchestration_id}",
+        "orchestration_id": orchestration_id,
+        "messages": messages,
+        "total": len(messages),
+    }
 
 
 # ---------------------------------------------------------------------------
-# Embedded HTML UI
+# Schemas
+# ---------------------------------------------------------------------------
+
+def list_schemas() -> list[dict[str, Any]]:
+    """Return metadata for all registered mind schemas."""
+    logger.debug("Listing schemas")
+    return schema_storage.list_schemas()
+
+
+def get_schema(name: str) -> dict[str, Any] | None:
+    """Return a schema definition or ``None`` if not registered."""
+    logger.debug("Getting schema %s", name)
+    return schema_storage.get_schema(name)
+
+
+def get_schema_available() -> list[str]:
+    """Return the list of registered schema names."""
+    return list(schema_storage.SCHEMA_REGISTRY.keys())
+
+
+# ---------------------------------------------------------------------------
+# Schema contexts
+# ---------------------------------------------------------------------------
+
+def list_schema_contexts(schema_name: str | None = None) -> list[dict[str, Any]]:
+    """Return stored schema contexts, optionally filtered by schema name."""
+    logger.debug("Listing schema contexts, schema=%s", schema_name)
+    return schema_storage.list_schema_contexts(schema_name)
+
+
+def get_schema_context(schema_name: str, context_id: str) -> dict[str, Any] | None:
+    """Return a stored schema context or ``None`` if not found."""
+    logger.debug("Getting schema context %s/%s", schema_name, context_id)
+    return schema_storage.get_schema_context(schema_name, context_id)
+
+
+def store_schema_context(
+    schema_name: str,
+    context_id: str,
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist a schema context and return a confirmation record."""
+    logger.debug("Storing schema context %s/%s", schema_name, context_id)
+    return schema_storage.store_schema_context(schema_name, context_id, data)
+
+
+# ---------------------------------------------------------------------------
+# Embedded single-page MCP Apps UI
 # ---------------------------------------------------------------------------
 
 _APP_HTML = """\

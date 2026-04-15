@@ -7,6 +7,14 @@ Two tables are used:
 
 Row-keys inside the Conversations table are zero-padded microsecond timestamps
 so that messages sort in chronological order by default.
+
+Demo-data fallback
+------------------
+When no Azure Storage connection string is configured (e.g. during a first
+deployment or local testing without Azurite), the module falls back to loading
+read-only demo conversations from Schema.org JSON-LD files in the
+``data/conversations/`` directory.  Set ``DEMO_DATA_DIR`` in the environment
+to override the default location.
 """
 
 from __future__ import annotations
@@ -17,6 +25,7 @@ import os
 import secrets
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from azure.core.exceptions import ResourceNotFoundError
@@ -30,12 +39,102 @@ _PK_INDEX = "orchestrations"
 
 
 # ---------------------------------------------------------------------------
+# Demo-data helpers (file-based fallback)
+# ---------------------------------------------------------------------------
+
+def _storage_conn_str() -> str:
+    return os.environ.get("AZURE_STORAGE_CONNECTION_STRING") or os.environ.get("AzureWebJobsStorage", "")
+
+
+def _use_demo_data() -> bool:
+    """Return ``True`` when no real Azure Storage connection string is configured."""
+    conn = _storage_conn_str()
+    return not conn
+
+
+def _demo_conversations_dir() -> Path:
+    override = os.environ.get("DEMO_DATA_DIR")
+    if override:
+        return Path(override) / "conversations"
+    return Path(__file__).parent.parent / "data" / "conversations"
+
+
+def _jsonld_doc_to_orchestration(doc: dict[str, Any]) -> dict[str, Any]:
+    """Map a Schema.org Action JSON-LD document to the internal orchestration dict."""
+    _status_map = {
+        "https://schema.org/ActiveActionStatus": "active",
+        "https://schema.org/CompletedActionStatus": "completed",
+        "https://schema.org/FailedActionStatus": "failed",
+    }
+    agents_raw = doc.get("agent", [])
+    agents: list[str] = []
+    if isinstance(agents_raw, list):
+        for a in agents_raw:
+            if isinstance(a, dict):
+                agents.append(a.get("identifier", ""))
+            elif isinstance(a, str):
+                agents.append(a)
+    conv = doc.get("object", {})
+    message_count = len(conv.get("hasPart", [])) if isinstance(conv, dict) else 0
+    result_obj = doc.get("result", {})
+    summary = result_obj.get("description", "") if isinstance(result_obj, dict) else ""
+    return {
+        "orchestration_id": doc.get("identifier", ""),
+        "purpose": doc.get("name", ""),
+        "status": _status_map.get(doc.get("actionStatus", ""), "active"),
+        "agents": agents,
+        "message_count": message_count,
+        "summary": summary,
+        "created_at": doc.get("startTime", ""),
+        "updated_at": doc.get("endTime", doc.get("startTime", "")),
+    }
+
+
+def _jsonld_doc_to_messages(doc: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract messages from a Schema.org Action JSON-LD document."""
+    orchestration_id = doc.get("identifier", "")
+    conv = doc.get("object", {})
+    parts = conv.get("hasPart", []) if isinstance(conv, dict) else []
+    messages: list[dict[str, Any]] = []
+    for part in parts:
+        if not isinstance(part, dict):
+            continue
+        sender = part.get("sender", {})
+        agent_id = sender.get("identifier", "") if isinstance(sender, dict) else str(sender)
+        messages.append({
+            "orchestration_id": orchestration_id,
+            "sequence": part.get("identifier", ""),
+            "agent_id": agent_id,
+            "role": part.get("additionalType", "user"),
+            "content": part.get("text", ""),
+            "metadata": {},
+            "created_at": part.get("dateCreated", ""),
+        })
+    return messages
+
+
+def _load_demo_conversations_dir() -> list[dict[str, Any]]:
+    """Load all JSON-LD conversation files and return as (doc, orchestration) pairs."""
+    data_dir = _demo_conversations_dir()
+    if not data_dir.exists():
+        logger.debug("Demo conversations directory not found: %s", data_dir)
+        return []
+    docs: list[dict[str, Any]] = []
+    for path in sorted(data_dir.glob("*.json")):
+        try:
+            docs.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to load demo conversation %s: %s", path.name, exc)
+    return docs
+
+
+# ---------------------------------------------------------------------------
 # Connection helpers
 # ---------------------------------------------------------------------------
 
 def _service_client() -> TableServiceClient:
     """Build a ``TableServiceClient`` from available connection settings."""
-    conn_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING") or os.environ.get("AzureWebJobsStorage", "")
+    conn_str = _storage_conn_str()
     return TableServiceClient.from_connection_string(conn_str)
 
 
@@ -103,6 +202,11 @@ def create_orchestration(
 
 def get_orchestration(orchestration_id: str) -> dict[str, Any] | None:
     """Fetch a single orchestration by id.  Returns ``None`` if missing."""
+    if _use_demo_data():
+        for doc in _load_demo_conversations_dir():
+            if doc.get("identifier") == orchestration_id:
+                return _jsonld_doc_to_orchestration(doc)
+        return None
     client = _orchestrations_client()
     try:
         entity = client.get_entity(partition_key=_PK_INDEX, row_key=orchestration_id)
@@ -113,6 +217,11 @@ def get_orchestration(orchestration_id: str) -> dict[str, Any] | None:
 
 def list_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
     """Return all orchestrations, optionally filtered by *status*."""
+    if _use_demo_data():
+        all_orchs = [_jsonld_doc_to_orchestration(doc) for doc in _load_demo_conversations_dir()]
+        if status:
+            return [o for o in all_orchs if o.get("status") == status]
+        return all_orchs
     client = _orchestrations_client()
     query = f"PartitionKey eq '{_PK_INDEX}'"
     if status:
@@ -204,6 +313,12 @@ def get_conversation(
     limit: int = 200,
 ) -> list[dict[str, Any]]:
     """Return all messages for an orchestration in chronological order."""
+    if _use_demo_data():
+        for doc in _load_demo_conversations_dir():
+            if doc.get("identifier") == orchestration_id:
+                msgs = _jsonld_doc_to_messages(doc)
+                return msgs[:limit] if limit else msgs
+        return []
     client = _conversations_client()
     query = f"PartitionKey eq '{orchestration_id}'"
     entities = list(client.query_entities(query))

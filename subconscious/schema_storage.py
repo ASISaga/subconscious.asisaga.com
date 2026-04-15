@@ -17,6 +17,13 @@ Table layout for **SchemaContexts**:
   ``ceo/company`` for entity perspectives).
 * ``Content``: JSON-serialised JSON-LD document.
 * ``UpdatedAt``: ISO-8601 timestamp of the last write.
+
+Demo-data fallback
+------------------
+When no Azure Storage connection string is configured the module falls back to
+loading read-only demo contexts from Schema.org JSON-LD files in the
+``data/schema_contexts/`` directory.  Filenames follow the convention
+``<schema>-<context_id>.json`` (e.g. ``manas-ceo.json``).
 """
 
 from __future__ import annotations
@@ -49,6 +56,92 @@ SCHEMA_REGISTRY: dict[str, str] = {
     "entity-context": "entity-context.schema.json",
     "entity-content": "entity-content.schema.json",
 }
+
+
+# ---------------------------------------------------------------------------
+# Demo-data helpers (file-based fallback)
+# ---------------------------------------------------------------------------
+
+def _storage_conn_str() -> str:
+    return (
+        os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+        or os.environ.get("AzureWebJobsStorage", "")
+    )
+
+
+def _use_demo_data() -> bool:
+    """Return ``True`` when no real Azure Storage connection string is configured."""
+    return not _storage_conn_str()
+
+
+def _demo_schema_contexts_dir() -> Path:
+    override = os.environ.get("DEMO_DATA_DIR")
+    if override:
+        return Path(override) / "schema_contexts"
+    return Path(__file__).parent.parent / "data" / "schema_contexts"
+
+
+def _load_demo_schema_context(schema_name: str, context_id: str) -> dict[str, Any] | None:
+    """Load a single demo schema context from a JSON-LD file.
+
+    Looks for ``<schema_name>-<context_id>.json`` in the demo contexts directory.
+    Falls back to scanning all files for a matching ``identifier``.
+    """
+    data_dir = _demo_schema_contexts_dir()
+    if not data_dir.exists():
+        return None
+    # Primary: conventional filename
+    primary = data_dir / f"{schema_name}-{context_id}.json"
+    if primary.exists():
+        try:
+            doc = json.loads(primary.read_text(encoding="utf-8"))
+            return {
+                "schema_name": schema_name,
+                "context_id": context_id,
+                "data": doc,
+                "updated_at": doc.get("dateModified", ""),
+            }
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to load demo context %s: %s", primary.name, exc)
+    # Fallback: scan all files
+    for path in data_dir.glob("*.json"):
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            schema_key = doc.get("mind:schema", "") or ""
+            ctx_id = doc.get("identifier", "")
+            if schema_key == schema_name and ctx_id == context_id:
+                return {
+                    "schema_name": schema_name,
+                    "context_id": context_id,
+                    "data": doc,
+                    "updated_at": doc.get("dateModified", ""),
+                }
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to scan demo context %s: %s", path.name, exc)
+    return None
+
+
+def _list_demo_schema_contexts(schema_name: str | None = None) -> list[dict[str, Any]]:
+    """List demo schema contexts, optionally filtered by schema name."""
+    data_dir = _demo_schema_contexts_dir()
+    if not data_dir.exists():
+        return []
+    results: list[dict[str, Any]] = []
+    for path in sorted(data_dir.glob("*.json")):
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            schema_key = doc.get("mind:schema", "")
+            ctx_id = doc.get("identifier", "")
+            if schema_name and schema_key != schema_name:
+                continue
+            results.append({
+                "schema_name": schema_key,
+                "context_id": ctx_id,
+                "updated_at": doc.get("dateModified", ""),
+            })
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to list demo context %s: %s", path.name, exc)
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -121,10 +214,7 @@ def get_schema(schema_name: str) -> dict[str, Any] | None:
 # ---------------------------------------------------------------------------
 
 def _service_client() -> TableServiceClient:
-    conn_str = (
-        os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
-        or os.environ.get("AzureWebJobsStorage", "")
-    )
+    conn_str = _storage_conn_str()
     return TableServiceClient.from_connection_string(conn_str)
 
 
@@ -138,7 +228,7 @@ def _schema_contexts_client():
 
 
 # ---------------------------------------------------------------------------
-# Schema context CRUD (Azure Table Storage–backed)
+# Schema context CRUD (Azure Table Storage–backed, with demo-data fallback)
 # ---------------------------------------------------------------------------
 
 def store_schema_context(
@@ -181,6 +271,8 @@ def get_schema_context(
 
     Returns ``None`` if the context has not been stored yet.
     """
+    if _use_demo_data():
+        return _load_demo_schema_context(schema_name, context_id)
     client = _schema_contexts_client()
     try:
         entity = client.get_entity(partition_key=schema_name, row_key=context_id)
@@ -208,6 +300,8 @@ def list_schema_contexts(
         List of summary records containing ``schema_name``, ``context_id``,
         and ``updated_at``.
     """
+    if _use_demo_data():
+        return _list_demo_schema_contexts(schema_name)
     client = _schema_contexts_client()
     if schema_name:
         query = f"PartitionKey eq '{schema_name}'"
