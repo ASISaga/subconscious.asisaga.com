@@ -1,165 +1,16 @@
-"""HTTP handler functions for the Subconscious REST API.
+"""Subconscious landing page.
 
-All handlers are plain synchronous Python functions that return JSON-serialisable
-dicts or lists — no framework dependency.  The Azure Functions layer in
-``function_app.py`` calls these functions and serialises the results.
-
-Responses conform to **Schema.org JSON-LD**: every dict response includes
-``@context`` and ``@type`` annotations so that MCP clients and browser tools
-can consume the data as linked data.
+This module provides :func:`get_app_html` — the HTML landing page served at
+``/`` by the Azure Functions host.  All data access is exposed through the
+MCP endpoint at ``/mcp`` using FastMCP tools, resources, and the
+``Conversations`` MCP App.
 """
 
 from __future__ import annotations
 
-import logging
-from typing import Any
-
-from subconscious import schema_storage, storage
-
-logger = logging.getLogger(__name__)
-
-_SCHEMA_ORG = "https://schema.org/"
-
-# Map orchestration status strings to Schema.org ActionStatus URIs
-_ACTION_STATUS = {
-    "active": "https://schema.org/ActiveActionStatus",
-    "completed": "https://schema.org/CompletedActionStatus",
-    "failed": "https://schema.org/FailedActionStatus",
-}
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _orchestration_to_jsonld(orch: dict[str, Any]) -> dict[str, Any]:
-    """Annotate an orchestration dict with Schema.org JSON-LD fields."""
-    status_uri = _ACTION_STATUS.get(orch.get("status", ""), _ACTION_STATUS["active"])
-    return {
-        "@context": _SCHEMA_ORG,
-        "@type": "Action",
-        "@id": f"subconscious://orchestrations/{orch['orchestration_id']}",
-        "actionStatus": status_uri,
-        **orch,
-    }
-
-
-def _message_to_jsonld(msg: dict[str, Any]) -> dict[str, Any]:
-    """Annotate a message dict with Schema.org JSON-LD fields."""
-    return {
-        "@context": _SCHEMA_ORG,
-        "@type": "Message",
-        "@id": f"subconscious://messages/{msg['orchestration_id']}/{msg['sequence']}",
-        "sender": {"@type": "Person", "identifier": msg.get("agent_id", "")},
-        "dateCreated": msg.get("created_at", ""),
-        "text": msg.get("content", ""),
-        **msg,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Health
-# ---------------------------------------------------------------------------
-
-def get_health() -> dict[str, Any]:
-    """Return service health status as a Schema.org HealthAspect document."""
-    logger.debug("Health check")
-    return {
-        "@context": _SCHEMA_ORG,
-        "@type": "HealthAspect",
-        "status": "healthy",
-        "service": "subconscious",
-    }
-
-
-# ---------------------------------------------------------------------------
-# Orchestrations
-# ---------------------------------------------------------------------------
-
-def list_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
-    """Return all orchestrations as a list of Schema.org Action documents."""
-    logger.debug("Listing orchestrations, status=%s", status)
-    raw = storage.list_orchestrations(status)
-    return [_orchestration_to_jsonld(o) for o in raw]
-
-
-def get_orchestration(orchestration_id: str) -> dict[str, Any] | None:
-    """Return a single orchestration or ``None`` if not found."""
-    logger.debug("Getting orchestration %s", orchestration_id)
-    raw = storage.get_orchestration(orchestration_id)
-    if raw is None:
-        return None
-    return _orchestration_to_jsonld(raw)
-
-
-def get_conversation(orchestration_id: str, limit: int = 200) -> dict[str, Any]:
-    """Return messages for an orchestration wrapped in a Schema.org Conversation."""
-    logger.debug("Getting conversation %s, limit=%d", orchestration_id, limit)
-    raw_msgs = storage.get_conversation(orchestration_id, limit=limit)
-    messages = [_message_to_jsonld(m) for m in raw_msgs]
-    return {
-        "@context": _SCHEMA_ORG,
-        "@type": "Conversation",
-        "@id": f"subconscious://conversations/{orchestration_id}",
-        "orchestration_id": orchestration_id,
-        "messages": messages,
-        "total": len(messages),
-    }
-
-
-# ---------------------------------------------------------------------------
-# Schemas
-# ---------------------------------------------------------------------------
-
-def list_schemas() -> list[dict[str, Any]]:
-    """Return metadata for all registered mind schemas."""
-    logger.debug("Listing schemas")
-    return schema_storage.list_schemas()
-
-
-def get_schema(name: str) -> dict[str, Any] | None:
-    """Return a schema definition or ``None`` if not registered."""
-    logger.debug("Getting schema %s", name)
-    return schema_storage.get_schema(name)
-
-
-def get_schema_available() -> list[str]:
-    """Return the list of registered schema names."""
-    return list(schema_storage.SCHEMA_REGISTRY.keys())
-
-
-# ---------------------------------------------------------------------------
-# Schema contexts
-# ---------------------------------------------------------------------------
-
-def list_schema_contexts(schema_name: str | None = None) -> list[dict[str, Any]]:
-    """Return stored schema contexts, optionally filtered by schema name."""
-    logger.debug("Listing schema contexts, schema=%s", schema_name)
-    return schema_storage.list_schema_contexts(schema_name)
-
-
-def get_schema_context(schema_name: str, context_id: str) -> dict[str, Any] | None:
-    """Return a stored schema context or ``None`` if not found."""
-    logger.debug("Getting schema context %s/%s", schema_name, context_id)
-    return schema_storage.get_schema_context(schema_name, context_id)
-
-
-def store_schema_context(
-    schema_name: str,
-    context_id: str,
-    data: dict[str, Any],
-) -> dict[str, Any]:
-    """Persist a schema context and return a confirmation record."""
-    logger.debug("Storing schema context %s/%s", schema_name, context_id)
-    return schema_storage.store_schema_context(schema_name, context_id, data)
-
-
-# ---------------------------------------------------------------------------
-# Embedded single-page MCP Apps UI
-# ---------------------------------------------------------------------------
 
 def get_app_html() -> str:
-    """Return the embedded single-page MCP Apps UI HTML."""
+    """Return the Subconscious landing page HTML."""
     return _APP_HTML
 
 
@@ -169,270 +20,66 @@ _APP_HTML = """\
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Subconscious — MCP Apps</title>
+<title>Subconscious — MCP Server</title>
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #242836;
     --border: #2e3348; --text: #e4e6f0; --muted: #8b8fa3;
-    --accent: #6c63ff; --accent-dim: #4a4380; --success: #22c55e;
-    --warn: #f59e0b; --error: #ef4444;
+    --accent: #6c63ff; --success: #22c55e;
     --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
     --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font); background: var(--bg); color: var(--text);
-         display: flex; height: 100vh; overflow: hidden; }
-
-  /* Sidebar */
-  #sidebar { width: 340px; min-width: 260px; background: var(--surface);
-             border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-  #sidebar header { padding: 20px; border-bottom: 1px solid var(--border); }
-  #sidebar header h1 { font-size: 1.15rem; font-weight: 600; }
-  #sidebar header p { font-size: .78rem; color: var(--muted); margin-top: 4px; }
-  #filter-bar { padding: 12px 16px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); }
-  #filter-bar select, #filter-bar input {
-    flex: 1; background: var(--surface2); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 7px 10px; font-size: .82rem; outline: none;
-  }
-  #filter-bar select:focus, #filter-bar input:focus { border-color: var(--accent); }
-  #orch-list { flex: 1; overflow-y: auto; padding: 8px; }
-  .orch-card { padding: 12px 14px; border-radius: 8px; cursor: pointer;
-               margin-bottom: 4px; transition: background .15s; }
-  .orch-card:hover { background: var(--surface2); }
-  .orch-card.active { background: var(--accent-dim); }
-  .orch-card h3 { font-size: .88rem; font-weight: 500; white-space: nowrap;
-                  overflow: hidden; text-overflow: ellipsis; }
-  .orch-card .meta { font-size: .73rem; color: var(--muted); margin-top: 4px;
-                     display: flex; gap: 10px; align-items: center; }
-  .badge { display: inline-block; padding: 2px 7px; border-radius: 4px;
-           font-size: .68rem; font-weight: 600; text-transform: uppercase; }
-  .badge-active { background: rgba(108,99,255,.2); color: var(--accent); }
-  .badge-completed { background: rgba(34,197,94,.15); color: var(--success); }
-  .badge-failed { background: rgba(239,68,68,.15); color: var(--error); }
-
-  /* Main panel */
-  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  #main header { padding: 18px 24px; border-bottom: 1px solid var(--border);
-                 display: flex; justify-content: space-between; align-items: center; }
-  #main header h2 { font-size: 1.05rem; font-weight: 600; }
-  #main header .info { font-size: .78rem; color: var(--muted); }
-  #conversation { flex: 1; overflow-y: auto; padding: 20px 24px; }
-  #placeholder { display: flex; align-items: center; justify-content: center;
-                 height: 100%; color: var(--muted); font-size: .95rem; }
-
-  /* Messages */
-  .msg { margin-bottom: 16px; padding: 14px 18px; border-radius: 10px;
-         background: var(--surface); border: 1px solid var(--border); }
-  .msg .msg-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
-  .msg .agent { font-size: .82rem; font-weight: 600; color: var(--accent); }
-  .msg .role { font-size: .72rem; color: var(--muted); text-transform: uppercase;
-               background: var(--surface2); padding: 2px 6px; border-radius: 3px; }
-  .msg .content { font-size: .88rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
-  .msg .ts { font-size: .7rem; color: var(--muted); margin-top: 6px; }
-
-  /* Connection bar */
-  #conn-bar { padding: 10px 24px; border-top: 1px solid var(--border);
-              background: var(--surface); font-size: .78rem; color: var(--muted);
-              display: flex; justify-content: space-between; align-items: center; }
-  #conn-bar code { font-family: var(--mono); color: var(--accent); background: var(--surface2);
-                   padding: 2px 8px; border-radius: 4px; font-size: .76rem; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .dot-ok { background: var(--success); }
-  .dot-err { background: var(--error); }
-
-  /* Empty state */
-  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: .4; }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+         display: flex; align-items: center; justify-content: center;
+         min-height: 100vh; padding: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 12px; padding: 40px 48px; max-width: 640px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+  p { color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+  .endpoint { background: var(--surface2); border: 1px solid var(--border);
+              border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .endpoint code { font-family: var(--mono); color: var(--accent); font-size: .9rem; }
+  .endpoint small { display: block; color: var(--muted); font-size: .78rem; margin-top: 4px; }
+  h2 { font-size: 1rem; font-weight: 600; margin: 24px 0 12px; color: var(--text); }
+  ul { padding-left: 20px; }
+  li { color: var(--muted); line-height: 1.8; font-size: .9rem; }
+  li code { font-family: var(--mono); color: var(--accent); font-size: .85rem; }
+  .tag { display: inline-block; background: rgba(108,99,255,.15); color: var(--accent);
+         border-radius: 4px; padding: 2px 8px; font-size: .75rem; font-weight: 600;
+         margin-right: 6px; }
 </style>
 </head>
 <body>
+<div class="card">
+  <h1>&#x1f9e0; Subconscious</h1>
+  <p>Multi-agent conversation persistence and schema context server,
+     powered by FastMCP on Azure Functions.</p>
 
-<!-- Sidebar -->
-<div id="sidebar">
-  <header>
-    <h1 aria-label="Subconscious">&#x1f9e0; Subconscious</h1>
-    <p>Multi-Agent Conversation &amp; Schema Context Persistence</p>
-  </header>
-  <div id="filter-bar">
-    <select id="status-filter">
-      <option value="">All</option>
-      <option value="active">Active</option>
-      <option value="completed">Completed</option>
-      <option value="failed">Failed</option>
-    </select>
-    <input id="search" type="text" placeholder="Search&#x2026;"/>
+  <h2>MCP Endpoint</h2>
+  <div class="endpoint">
+    <code>/mcp</code>
+    <small>Connect your MCP client (Claude Desktop, Copilot, etc.) to this endpoint.</small>
   </div>
-  <div id="orch-list"></div>
+
+  <h2>Available via MCP</h2>
+  <ul>
+    <li><span class="tag">App</span><code>show_conversations</code> — rich Prefab UI for browsing orchestrations</li>
+    <li><span class="tag">Tool</span><code>create_orchestration</code>, <code>list_orchestrations</code>, <code>get_conversation</code></li>
+    <li><span class="tag">Tool</span><code>persist_message</code>, <code>persist_conversation_turn</code></li>
+    <li><span class="tag">Tool</span><code>list_schemas</code>, <code>get_schema</code></li>
+    <li><span class="tag">Tool</span><code>store_schema_context</code>, <code>get_schema_context</code></li>
+    <li><span class="tag">Resource</span><code>orchestration://&lt;id&gt;</code>, <code>schema://&lt;name&gt;</code></li>
+    <li><span class="tag">Prompt</span><code>summarize_conversation</code></li>
+  </ul>
+
+  <h2>Data Format</h2>
+  <p style="margin-bottom:0">All conversation and orchestration data is exchanged as
+    <strong style="color:var(--text)">Schema.org JSON-LD</strong>
+    (<code>schema:Action</code>, <code>schema:Conversation</code>, <code>schema:Message</code>).
+  </p>
 </div>
-
-<!-- Main panel -->
-<div id="main">
-  <header id="main-header" style="display:none">
-    <div>
-      <h2 id="orch-title">—</h2>
-      <div class="info" id="orch-info"></div>
-    </div>
-    <div id="orch-badge"></div>
-  </header>
-  <div id="conversation">
-    <div id="placeholder">
-      <div class="empty">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-             stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round"
-                d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847
-                   2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3a49.5 49.5 0
-                   01-4.02-.163 2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0
-                   00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976
-                   2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621
-                   -1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115
-                   0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0
-                   1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155
-                   -4.155"/>
-        </svg>
-        <p>Select an orchestration to view its conversation</p>
-        <p style="margin-top:8px;font-size:.78rem">
-          MCP endpoint: <code style="font-family:var(--mono);color:var(--accent)">/mcp</code>
-        </p>
-      </div>
-    </div>
-  </div>
-  <div id="conn-bar">
-    <span><span class="dot dot-ok" id="health-dot"></span>
-      MCP endpoint: <code>/mcp</code></span>
-    <span id="msg-count"></span>
-  </div>
-</div>
-
-<script>
-const API = '/api';
-let orchestrations = [];
-let selectedId = null;
-let refreshTimer = null;
-
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(r.statusText);
-  return r.json();
-}
-
-function badgeHTML(status) {
-  const cls = {active:'badge-active',completed:'badge-completed',failed:'badge-failed'}[status]||'badge-active';
-  return `<span class="badge ${cls}">${status}</span>`;
-}
-
-function timeAgo(iso) {
-  if (!iso) return '';
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return s + 's ago';
-  if (s < 3600) return Math.floor(s/60) + 'm ago';
-  if (s < 86400) return Math.floor(s/3600) + 'h ago';
-  return Math.floor(s/86400) + 'd ago';
-}
-
-async function loadOrchestrations() {
-  const status = document.getElementById('status-filter').value;
-  const url = status ? `${API}/orchestrations?status=${status}` : `${API}/orchestrations`;
-  try {
-    orchestrations = await fetchJSON(url);
-    renderList();
-  } catch(e) {
-    document.getElementById('orch-list').innerHTML =
-      '<div class="empty"><p>Unable to load orchestrations</p></div>';
-  }
-}
-
-function renderList() {
-  const q = document.getElementById('search').value.toLowerCase();
-  const filtered = orchestrations.filter(o =>
-    !q || o.orchestration_id.toLowerCase().includes(q) || (o.purpose||'').toLowerCase().includes(q)
-  );
-  const el = document.getElementById('orch-list');
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty"><p>No orchestrations found</p></div>';
-    return;
-  }
-  el.innerHTML = filtered.map(o => `
-    <div class="orch-card ${o.orchestration_id===selectedId?'active':''}"
-         onclick="selectOrch('${o.orchestration_id}')">
-      <h3 title="${o.orchestration_id}">${o.purpose || o.orchestration_id}</h3>
-      <div class="meta">
-        ${badgeHTML(o.status)}
-        <span>${o.message_count} msgs</span>
-        <span>${timeAgo(o.updated_at)}</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function selectOrch(id) {
-  selectedId = id;
-  renderList();
-  document.getElementById('main-header').style.display = 'flex';
-  const orch = orchestrations.find(o => o.orchestration_id === id);
-  document.getElementById('orch-title').textContent = orch ? (orch.purpose || id) : id;
-  document.getElementById('orch-info').textContent = `ID: ${id}`;
-  document.getElementById('orch-badge').innerHTML = orch ? badgeHTML(orch.status) : '';
-  await loadMessages(id);
-}
-
-async function loadMessages(id) {
-  const conv = document.getElementById('conversation');
-  try {
-    const data = await fetchJSON(`${API}/orchestrations/${id}/messages`);
-    document.getElementById('msg-count').textContent = `${data.total} messages`;
-    if (!data.messages.length) {
-      conv.innerHTML = '<div class="empty"><p>No messages yet</p></div>';
-      return;
-    }
-    conv.innerHTML = data.messages.map(m => `
-      <div class="msg">
-        <div class="msg-header">
-          <span class="agent">${m.agent_id}</span>
-          <span class="role">${m.role}</span>
-        </div>
-        <div class="content">${escapeHTML(m.content)}</div>
-        <div class="ts">${m.created_at}</div>
-      </div>
-    `).join('');
-    conv.scrollTop = conv.scrollHeight;
-  } catch(e) {
-    conv.innerHTML = '<div class="empty"><p>Failed to load conversation</p></div>';
-  }
-}
-
-function escapeHTML(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-async function checkHealth() {
-  const dot = document.getElementById('health-dot');
-  try {
-    await fetchJSON(`${API}/health`);
-    dot.className = 'dot dot-ok';
-  } catch {
-    dot.className = 'dot dot-err';
-  }
-}
-
-// Initialise
-document.getElementById('status-filter').addEventListener('change', loadOrchestrations);
-document.getElementById('search').addEventListener('input', renderList);
-loadOrchestrations();
-checkHealth();
-refreshTimer = setInterval(() => {
-  loadOrchestrations();
-  if (selectedId) loadMessages(selectedId);
-  checkHealth();
-}, 15000);
-</script>
 </body>
 </html>
 """
+

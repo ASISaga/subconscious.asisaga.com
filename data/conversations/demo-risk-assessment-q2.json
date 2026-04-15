@@ -1,0 +1,71 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "Action",
+  "@id": "subconscious://orchestrations/demo-risk-assessment-q2",
+  "identifier": "demo-risk-assessment-q2",
+  "name": "Q2 Enterprise Risk Assessment",
+  "description": "Cross-functional risk identification and mitigation planning for Q2 2024.",
+  "actionStatus": "https://schema.org/ActiveActionStatus",
+  "startTime": "2024-06-10T14:00:00Z",
+  "agent": [
+    {"@type": "Person", "identifier": "ceo", "name": "CEO Agent"},
+    {"@type": "Person", "identifier": "cso", "name": "CSO Agent"},
+    {"@type": "Person", "identifier": "cfo", "name": "CFO Agent"}
+  ],
+  "object": {
+    "@type": "Conversation",
+    "@id": "subconscious://conversations/demo-risk-assessment-q2",
+    "hasPart": [
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-risk-assessment-q2/msg_0001",
+        "identifier": "msg_0001",
+        "sender": {"@type": "Person", "identifier": "ceo"},
+        "dateCreated": "2024-06-10T14:00:00Z",
+        "text": "We need a comprehensive Q2 risk register. Three areas: cyber-security, supply chain resilience, and regulatory compliance in the new APAC markets.",
+        "additionalType": "user",
+        "disambiguatingDescription": "CEO opens Q2 risk assessment session."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-risk-assessment-q2/msg_0002",
+        "identifier": "msg_0002",
+        "sender": {"@type": "Person", "identifier": "cso"},
+        "dateCreated": "2024-06-10T14:06:00Z",
+        "text": "Cyber-security posture: risk rating HIGH. We have three unpatched critical CVEs in the ERP stack (CVSS 9.1, 8.8, 8.3). Remediation window is 14 days. Cloud SOC coverage is 93% — target is 99%. Recommend immediate patch sprint and 24/7 SOC upgrade.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CSO presents cyber-security risk profile."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-risk-assessment-q2/msg_0003",
+        "identifier": "msg_0003",
+        "sender": {"@type": "Person", "identifier": "cfo"},
+        "dateCreated": "2024-06-10T14:14:00Z",
+        "text": "Patching the ERP will cost $280K including downtime. SOC upgrade adds $420K annually. However, the expected loss from a breach (based on our cyber insurance actuarial data) is $4.2M. Risk-adjusted NPV strongly favours remediation.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CFO provides financial risk quantification."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-risk-assessment-q2/msg_0004",
+        "identifier": "msg_0004",
+        "sender": {"@type": "Person", "identifier": "ceo"},
+        "dateCreated": "2024-06-10T14:21:00Z",
+        "text": "Approved. Initiate patch sprint immediately. CSO owns the remediation timeline. What's the supply chain picture?",
+        "additionalType": "user",
+        "disambiguatingDescription": "CEO approves remediation and pivots to supply chain."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-risk-assessment-q2/msg_0005",
+        "identifier": "msg_0005",
+        "sender": {"@type": "Person", "identifier": "cfo"},
+        "dateCreated": "2024-06-10T14:28:00Z",
+        "text": "Supply chain: MEDIUM risk. Two Tier-1 suppliers in Taiwan have single-factory exposure. Dual-sourcing qualification underway for both — expected completion Q3. Buffer inventory covers 11 weeks. APAC compliance review still in progress; legal team targets completion by end of June.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CFO summarises supply chain and compliance status."
+      }
+    ]
+  }
+}

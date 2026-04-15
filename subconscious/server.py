@@ -4,6 +4,14 @@ Exposes orchestration management, message persistence, conversation retrieval,
 boardroom mind schema definitions, and schema context persistence/retrieval as
 MCP Tools and Resources.  Designed for use by Microsoft Agent Framework
 orchestrations deployed on Foundry Agent Service.
+
+MCP Apps
+--------
+A ``FastMCPApp`` named ``Conversations`` provides a rich Prefab UI that an MCP
+client (e.g. Claude Desktop, Copilot) can render to browse orchestrations and
+their full Schema.org JSON-LD conversation histories without leaving the chat
+interface.  The UI entry-point tool is ``show_conversations`` and backend data
+tools are ``load_orchestrations`` and ``load_conversation``.
 """
 
 from __future__ import annotations
@@ -12,11 +20,75 @@ import json
 import logging
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, FastMCPApp
 
 from subconscious import schema_storage, storage
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Schema.org JSON-LD annotation helpers (shared between tools and the App)
+# ---------------------------------------------------------------------------
+
+_SCHEMA_ORG = "https://schema.org/"
+
+_ACTION_STATUS: dict[str, str] = {
+    "active": "https://schema.org/ActiveActionStatus",
+    "completed": "https://schema.org/CompletedActionStatus",
+    "failed": "https://schema.org/FailedActionStatus",
+}
+
+
+def _orchestration_to_jsonld(orch: dict[str, Any]) -> dict[str, Any]:
+    """Return *orch* annotated with Schema.org Action JSON-LD fields."""
+    status_uri = _ACTION_STATUS.get(orch.get("status", ""), _ACTION_STATUS["active"])
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Action",
+        "@id": f"subconscious://orchestrations/{orch['orchestration_id']}",
+        "actionStatus": status_uri,
+        **orch,
+    }
+
+
+def _message_to_jsonld(msg: dict[str, Any]) -> dict[str, Any]:
+    """Return *msg* annotated with Schema.org Message JSON-LD fields."""
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Message",
+        "@id": f"subconscious://messages/{msg['orchestration_id']}/{msg['sequence']}",
+        "sender": {"@type": "Person", "identifier": msg.get("agent_id", "")},
+        "dateCreated": msg.get("created_at", ""),
+        "text": msg.get("content", ""),
+        **msg,
+    }
+
+
+def _conversation_to_jsonld(
+    orchestration_id: str,
+    messages: list[dict[str, Any]],
+    orch: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return a Schema.org Conversation JSON-LD document."""
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "Conversation",
+        "@id": f"subconscious://conversations/{orchestration_id}",
+        "orchestration_id": orchestration_id,
+        "purpose": orch.get("purpose", "") if orch else "",
+        "status": orch.get("status", "unknown") if orch else "unknown",
+        "actionStatus": _ACTION_STATUS.get(
+            orch.get("status", "") if orch else "",
+            _ACTION_STATUS["active"],
+        ),
+        "messages": [_message_to_jsonld(m) for m in messages],
+        "total": len(messages),
+    }
+
+
+# ---------------------------------------------------------------------------
+# FastMCP server instance
+# ---------------------------------------------------------------------------
 
 mcp = FastMCP(
     "Subconscious",
@@ -29,9 +101,160 @@ mcp = FastMCP(
         "Use 'list_schemas' and 'get_schema' to explore boardroom mind schema definitions.  "
         "Use 'store_schema_context' and 'get_schema_context' to persist and retrieve "
         "JSON-LD documents (agent Manas, Buddhi, Ahankara, Chitta, and entity perspectives) "
-        "that conform to the boardroom mind schemas."
+        "that conform to the boardroom mind schemas.  "
+        "Use 'show_conversations' to open the interactive conversation browser UI."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# FastMCPApp — rich Prefab UI for browsing conversations
+# ---------------------------------------------------------------------------
+
+conversations_app = FastMCPApp("Conversations")
+
+
+@conversations_app.tool()
+def load_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
+    """Load all orchestrations as Schema.org Action JSON-LD documents.
+
+    Called by the Conversations UI to populate the orchestration list.
+
+    Args:
+        status: Optional filter — ``active``, ``completed``, or ``failed``.
+
+    Returns:
+        List of Schema.org Action JSON-LD documents.
+    """
+    raw = storage.list_orchestrations(status)
+    return [_orchestration_to_jsonld(o) for o in raw]
+
+
+@conversations_app.tool()
+def load_conversation(orchestration_id: str) -> dict[str, Any]:
+    """Load a full conversation as a Schema.org Conversation JSON-LD document.
+
+    Called by the Conversations UI when the user selects an orchestration.
+
+    Args:
+        orchestration_id: The orchestration whose conversation to load.
+
+    Returns:
+        Schema.org Conversation JSON-LD document with embedded messages.
+    """
+    msgs = storage.get_conversation(orchestration_id)
+    orch = storage.get_orchestration(orchestration_id)
+    return _conversation_to_jsonld(orchestration_id, msgs, orch)
+
+
+@conversations_app.ui()
+def show_conversations(status: str | None = None) -> Any:
+    """Browse multi-agent orchestration conversations.
+
+    Opens an interactive UI that lists all orchestrations and lets you drill
+    into any conversation to see the full Schema.org JSON-LD message history.
+
+    Args:
+        status: Optional filter to show only ``active`` or ``completed`` orchestrations.
+
+    Returns:
+        A Prefab UI component tree rendered by the MCP client.
+    """
+    from prefab_ui.app import PrefabApp
+    from prefab_ui.components.badge import Badge
+    from prefab_ui.components.card import Card, CardContent, CardHeader, CardTitle
+    from prefab_ui.components.column import Column
+    from prefab_ui.components.data_table import DataTable, DataTableColumn
+    from prefab_ui.components.heading import Heading
+    from prefab_ui.components.row import Row
+    from prefab_ui.components.text import Text
+
+    orchestrations = load_orchestrations(status)
+
+    # Build the orchestrations table rows
+    rows = []
+    for o in orchestrations:
+        action_status = o.get("actionStatus", "")
+        if "Completed" in action_status:
+            status_label = "Completed"
+            badge_variant = "success"
+        elif "Failed" in action_status:
+            status_label = "Failed"
+            badge_variant = "destructive"
+        else:
+            status_label = "Active"
+            badge_variant = "default"
+
+        agents = o.get("agents", [])
+        agents_str = ", ".join(agents) if agents else "—"
+
+        rows.append({
+            "id": o.get("orchestration_id", ""),
+            "purpose": o.get("purpose", ""),
+            "status": status_label,
+            "agents": agents_str,
+            "messages": str(o.get("message_count", 0)),
+            "created": o.get("created_at", "")[:10] if o.get("created_at") else "—",
+        })
+
+    title = "Multi-Agent Conversations"
+    if status:
+        title += f" — {status.title()}"
+
+    with PrefabApp(
+        title=title,
+        state={
+            "orchestrations": rows,
+            "selected_id": None,
+            "conversation": None,
+        },
+    ) as app:
+        with Column(css_class="p-6 gap-6"):
+            with Row(css_class="items-center justify-between"):
+                Heading(title)
+                Badge(
+                    f"{len(orchestrations)} orchestration{'s' if len(orchestrations) != 1 else ''}",
+                    variant="secondary",
+                )
+
+            if not rows:
+                with Card():
+                    with CardContent(css_class="py-8 text-center"):
+                        Text(
+                            "No orchestrations found."
+                            + (f" (filter: {status})" if status else ""),
+                            css_class="text-muted-foreground",
+                        )
+            else:
+                with Card():
+                    with CardHeader():
+                        CardTitle("Orchestrations")
+                    with CardContent():
+                        DataTable(
+                            data=rows,
+                            columns=[
+                                DataTableColumn(key="purpose", header="Purpose"),
+                                DataTableColumn(key="status", header="Status"),
+                                DataTableColumn(key="agents", header="Agents"),
+                                DataTableColumn(key="messages", header="Messages"),
+                                DataTableColumn(key="created", header="Created"),
+                            ],
+                        )
+
+            if len(orchestrations) > 0:
+                with Card(css_class="mt-2"):
+                    with CardContent(css_class="py-4"):
+                        Text(
+                            "Select an orchestration above to load its full conversation. "
+                            "Use the 'load_conversation' tool with the orchestration ID.",
+                            css_class="text-sm text-muted-foreground",
+                        )
+
+    return app
+
+
+# Register the Conversations MCP App with the server
+mcp.add_provider(conversations_app)
 
 
 # ---------------------------------------------------------------------------
@@ -40,12 +263,14 @@ mcp = FastMCP(
 
 @mcp.resource("orchestration://{orchestration_id}")
 def orchestration_resource(orchestration_id: str) -> str:
-    """Return orchestration metadata and its full conversation history as JSON."""
+    """Return orchestration metadata and its full conversation history as Schema.org JSON-LD."""
     orch = storage.get_orchestration(orchestration_id)
     if orch is None:
         return json.dumps({"error": f"Orchestration '{orchestration_id}' not found"})
     messages = storage.get_conversation(orchestration_id)
-    return json.dumps({**orch, "messages": messages})
+    doc = _orchestration_to_jsonld(orch)
+    doc["object"] = _conversation_to_jsonld(orchestration_id, messages, orch)
+    return json.dumps(doc)
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +293,7 @@ def schema_resource(schema_name: str) -> str:
 
 @mcp.resource("schema-context://{schema_name}/{context_id}")
 def schema_context_resource(schema_name: str, context_id: str) -> str:
-    """Return a stored schema context document as JSON.
+    """Return a stored schema context document as JSON-LD.
 
     Args:
         schema_name: The mind schema name (e.g. ``manas``, ``buddhi``).
@@ -122,15 +347,16 @@ def complete_orchestration(
 
 @mcp.tool()
 def list_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
-    """List all known orchestrations, optionally filtered by status.
+    """List all known orchestrations as Schema.org Action JSON-LD documents.
 
     Args:
         status: Filter by ``active``, ``completed``, or ``failed``.
 
     Returns:
-        A list of orchestration summary records.
+        A list of Schema.org Action JSON-LD orchestration records.
     """
-    return storage.list_orchestrations(status)
+    raw = storage.list_orchestrations(status)
+    return [_orchestration_to_jsonld(o) for o in raw]
 
 
 # ---------------------------------------------------------------------------
@@ -190,24 +416,18 @@ def get_conversation(
     orchestration_id: str,
     limit: int = 200,
 ) -> dict[str, Any]:
-    """Retrieve the full conversation for an orchestration.
+    """Retrieve the full conversation for an orchestration as Schema.org JSON-LD.
 
     Args:
         orchestration_id: The orchestration whose conversation to retrieve.
         limit: Maximum number of messages to return (default 200).
 
     Returns:
-        Dict with ``orchestration_id``, ``messages`` list, and ``total`` count.
+        Schema.org Conversation JSON-LD document with embedded messages.
     """
     messages = storage.get_conversation(orchestration_id, limit=limit)
     orch = storage.get_orchestration(orchestration_id)
-    return {
-        "orchestration_id": orchestration_id,
-        "purpose": orch.get("purpose", "") if orch else "",
-        "status": orch.get("status", "unknown") if orch else "unknown",
-        "messages": messages,
-        "total": len(messages),
-    }
+    return _conversation_to_jsonld(orchestration_id, messages, orch)
 
 
 # ---------------------------------------------------------------------------

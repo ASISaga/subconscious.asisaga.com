@@ -1,0 +1,29 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "Action",
+  "identifier": "cso",
+  "name": "CSO Agent — Buddhi Schema Context",
+  "description": "Chief Security Officer agent Buddhi (intellect / decision-making layer) schema context.",
+  "schema": "buddhi",
+  "agent": {"@type": "Person", "identifier": "cso", "name": "Chief Security Officer Agent"},
+  "priorities": [
+    "Zero-trust architecture implementation",
+    "SOC maturity uplift to Tier 3",
+    "Regulatory compliance across APAC jurisdictions",
+    "Third-party vendor risk reduction"
+  ],
+  "riskFramework": "NIST CSF 2.0",
+  "keyMetrics": {
+    "SOC_coverage_pct": 93,
+    "critical_CVE_count": 3,
+    "patch_SLA_days": 14,
+    "mean_time_to_detect_hours": 4.2
+  },
+  "currentDecisionContext": {
+    "@type": "Action",
+    "name": "ERP Patch Sprint",
+    "actionStatus": "https://schema.org/ActiveActionStatus",
+    "description": "Remediate three critical CVEs in the ERP stack within 14-day window.",
+    "estimatedCost": {"@type": "MonetaryAmount", "value": 280000, "currency": "USD"}
+  }
+}

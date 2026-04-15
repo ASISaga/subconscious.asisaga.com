@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 from subconscious import storage
 from subconscious.server import mcp
@@ -35,6 +36,15 @@ class TestMCPToolRegistration:
         tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
         tool_names = {t.name for t in tools}
         assert expected.issubset(tool_names), f"Missing schema tools: {expected - tool_names}"
+
+    def test_mcp_apps_tools_registered(self):
+        """show_conversations must be registered as the MCP Apps entry-point tool."""
+        tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
+        tool_names = {t.name for t in tools}
+        # show_conversations is model-visible (UI entry point)
+        assert "show_conversations" in tool_names
+        # load_orchestrations and load_conversation are app-only backend tools
+        # (visibility=["app"]) — intentionally hidden from the model
 
     def test_expected_resource_templates_registered(self):
         templates = asyncio.get_event_loop().run_until_complete(mcp.list_resource_templates())
@@ -82,6 +92,31 @@ class TestMCPConversationTools:
         )
         assert result is not None
 
+    def test_get_conversation_returns_jsonld(self):
+        storage.create_orchestration("jsonld-test", "JSON-LD test")
+        storage.persist_message("jsonld-test", "ceo", "user", "Strategic update")
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_conversation", {"orchestration_id": "jsonld-test"})
+        )
+        data = json.loads(result.content[0].text)
+        assert data["@type"] == "Conversation"
+        assert data["@context"] == "https://schema.org/"
+        assert data["orchestration_id"] == "jsonld-test"
+        assert data["total"] == 1
+        msg = data["messages"][0]
+        assert msg["@type"] == "Message"
+        assert msg["text"] == "Strategic update"
+
+    def test_list_orchestrations_returns_jsonld(self):
+        storage.create_orchestration("lo-test", "List test")
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("list_orchestrations", {})
+        )
+        data = json.loads(result.content[0].text)
+        assert isinstance(data, list)
+        assert data[0]["@type"] == "Action"
+        assert data[0]["@context"] == "https://schema.org/"
+
     def test_list_orchestrations_tool(self):
         storage.create_orchestration("list-test", "For listing")
         result = asyncio.get_event_loop().run_until_complete(
@@ -111,6 +146,59 @@ class TestMCPConversationTools:
             })
         )
         assert result is not None
+
+
+class TestMCPAppsConversations:
+    """Verify the Conversations FastMCPApp backend tools work correctly.
+
+    ``load_orchestrations`` and ``load_conversation`` have visibility=[\"app\"]
+    and are intentionally hidden from the model.  We test them by calling the
+    registered Python functions directly.
+    """
+
+    def test_load_orchestrations_returns_jsonld(self):
+        from subconscious.server import load_orchestrations
+        storage.create_orchestration("app-lo-1", "App test orch")
+        data = load_orchestrations()
+        assert isinstance(data, list)
+        assert data[0]["@type"] == "Action"
+        assert "@context" in data[0]
+
+    def test_load_orchestrations_filter_by_status(self):
+        from subconscious.server import load_orchestrations
+        storage.create_orchestration("app-active", "Active orch")
+        storage.create_orchestration("app-done", "Completed orch")
+        storage.update_orchestration_status("app-done", "completed")
+        data = load_orchestrations(status="completed")
+        ids = [o["orchestration_id"] for o in data]
+        assert "app-done" in ids
+        assert "app-active" not in ids
+
+    def test_load_conversation_returns_jsonld_conversation(self):
+        from subconscious.server import load_conversation
+        storage.create_orchestration("app-conv-1", "App conv test")
+        storage.persist_message("app-conv-1", "cfo", "assistant", "Budget is on track.")
+        data = load_conversation("app-conv-1")
+        assert data["@type"] == "Conversation"
+        assert data["@context"] == "https://schema.org/"
+        assert data["orchestration_id"] == "app-conv-1"
+        assert data["total"] == 1
+        msg = data["messages"][0]
+        assert msg["@type"] == "Message"
+        assert msg["sender"]["identifier"] == "cfo"
+
+    def test_load_conversation_empty(self):
+        from subconscious.server import load_conversation
+        storage.create_orchestration("app-empty", "Empty conv")
+        data = load_conversation("app-empty")
+        assert data["total"] == 0
+        assert data["messages"] == []
+
+    def test_show_conversations_registered_as_ui_tool(self):
+        """show_conversations must be the MCP Apps entry-point tool."""
+        tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
+        names = {t.name for t in tools}
+        assert "show_conversations" in names
 
 
 class TestMCPSchemaTools:
@@ -181,13 +269,24 @@ class TestMCPSchemaTools:
 class TestMCPResourceExecution:
     """Execute MCP resource reads through the server."""
 
-    def test_orchestration_resource(self):
+    def test_orchestration_resource_returns_jsonld(self):
         storage.create_orchestration("res-test", "Resource test")
         storage.persist_message("res-test", "a", "user", "Test message")
         result = asyncio.get_event_loop().run_until_complete(
             mcp.read_resource("orchestration://res-test")
         )
-        assert result is not None
+        data = json.loads(result.contents[0].content)
+        assert data["@type"] == "Action"
+        assert "@context" in data
+        assert "object" in data
+        assert data["object"]["@type"] == "Conversation"
+
+    def test_orchestration_resource_not_found(self):
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.read_resource("orchestration://nonexistent-orch")
+        )
+        data = json.loads(result.contents[0].content)
+        assert "error" in data
 
     def test_schema_resource_known(self, schemas_dir):
         result = asyncio.get_event_loop().run_until_complete(

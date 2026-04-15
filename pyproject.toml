@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "azure-functions",
     "fastmcp>=3.0",
+    "prefab-ui",
     "azure-data-tables",
     "azure-identity",
 ]
