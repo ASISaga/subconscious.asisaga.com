@@ -51,7 +51,7 @@ on:
           - dev
           - staging
           - prod
-        default: dev
+        default: staging
   # Triggered automatically by ASISaga/aos-infrastructure after successful
   # Function App provisioning (Bicep Phase 4).  The payload includes the
   # environment name and Key Vault URL so that this workflow can retrieve
