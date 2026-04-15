@@ -5,7 +5,6 @@ __pycache__
 __azurite_db*__.json
 __blobstorage__
 __queuestorage__
-.python_packages
 .env
 .venv
 env/
