@@ -1,0 +1,50 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "Action",
+  "@id": "subconscious://orchestrations/demo-product-review-q1",
+  "identifier": "demo-product-review-q1",
+  "name": "Q1 Product Roadmap Review",
+  "description": "Cross-functional review of Q1 product deliverables and Q2 roadmap prioritisation.",
+  "actionStatus": "https://schema.org/ActiveActionStatus",
+  "startTime": "2024-04-02T14:00:00Z",
+  "agent": [
+    {"@type": "Person", "identifier": "cto", "name": "CTO Agent"},
+    {"@type": "Person", "identifier": "cmo", "name": "CMO Agent"}
+  ],
+  "object": {
+    "@type": "Conversation",
+    "@id": "subconscious://conversations/demo-product-review-q1",
+    "hasPart": [
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-product-review-q1/msg_0001",
+        "identifier": "msg_0001",
+        "sender": {"@type": "Person", "identifier": "cto"},
+        "dateCreated": "2024-04-02T14:00:00Z",
+        "text": "Q1 shipped: self-serve onboarding (✅), API rate-limit controls (✅), SAML SSO (delayed to Q2). Overall 87% of committed scope.",
+        "additionalType": "user",
+        "disambiguatingDescription": "CTO presents Q1 delivery status."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-product-review-q1/msg_0002",
+        "identifier": "msg_0002",
+        "sender": {"@type": "Person", "identifier": "cmo"},
+        "dateCreated": "2024-04-02T14:10:00Z",
+        "text": "Self-serve onboarding is already converting at 4.2% — above our 3% target. SAML SSO is blocking three enterprise deals worth $2.8M ACV. It must be Q2 priority one.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CMO highlights SAML urgency for enterprise pipeline."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-product-review-q1/msg_0003",
+        "identifier": "msg_0003",
+        "sender": {"@type": "Person", "identifier": "cto"},
+        "dateCreated": "2024-04-02T14:18:00Z",
+        "text": "Agreed. SAML SSO moves to Q2 sprint 1 with dedicated squad. ETA: May 15. I'll also pull in the mobile SDK beta — enterprise customers are requesting it alongside SSO.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CTO confirms Q2 priority and timeline."
+      }
+    ]
+  }
+}

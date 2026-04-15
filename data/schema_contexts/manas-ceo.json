@@ -1,0 +1,37 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "manas": "https://asisaga.com/schemas/mind/manas#",
+    "mind": "https://asisaga.com/schemas/mind/"
+  },
+  "@type": "DigitalDocument",
+  "@id": "subconscious://schema-contexts/manas/ceo",
+  "identifier": "ceo",
+  "name": "CEO Agent — Manas (Memory State)",
+  "description": "Working memory state for the CEO agent after the Q1 strategy session.",
+  "dateModified": "2024-03-01T11:30:00Z",
+  "about": {
+    "@type": "Person",
+    "identifier": "ceo",
+    "jobTitle": "Chief Executive Officer"
+  },
+  "mind:schema": "manas",
+  "mind:activeContext": {
+    "currentFocus": "2024 strategy execution",
+    "recentDecisions": [
+      "APAC market entry — $15M investment approved",
+      "Product-led growth — $20M allocated",
+      "Operational efficiency — target 12% overhead ratio"
+    ],
+    "pendingActions": [
+      "Brief board on strategic priorities",
+      "Commission APAC feasibility study"
+    ],
+    "emotionalValence": "optimistic",
+    "attentionWeights": {
+      "strategy": 0.6,
+      "execution": 0.3,
+      "stakeholders": 0.1
+    }
+  }
+}

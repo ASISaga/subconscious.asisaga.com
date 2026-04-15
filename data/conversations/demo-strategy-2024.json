@@ -1,0 +1,77 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "Action",
+  "@id": "subconscious://orchestrations/demo-strategy-2024",
+  "identifier": "demo-strategy-2024",
+  "name": "Annual Strategy Planning — C-Suite Alignment",
+  "description": "Coordinated C-suite orchestration to define corporate strategy priorities for 2024.",
+  "actionStatus": "https://schema.org/CompletedActionStatus",
+  "startTime": "2024-03-01T09:00:00Z",
+  "endTime": "2024-03-01T11:30:00Z",
+  "agent": [
+    {"@type": "Person", "identifier": "ceo", "name": "CEO Agent"},
+    {"@type": "Person", "identifier": "cfo", "name": "CFO Agent"},
+    {"@type": "Person", "identifier": "cto", "name": "CTO Agent"}
+  ],
+  "result": {
+    "@type": "Report",
+    "name": "2024 Strategic Priorities",
+    "description": "Three core priorities agreed: product-led growth, operational excellence, market expansion."
+  },
+  "object": {
+    "@type": "Conversation",
+    "@id": "subconscious://conversations/demo-strategy-2024",
+    "hasPart": [
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-strategy-2024/msg_0001",
+        "identifier": "msg_0001",
+        "sender": {"@type": "Person", "identifier": "ceo"},
+        "dateCreated": "2024-03-01T09:00:00Z",
+        "text": "Let's align on our top three strategic priorities for 2024. I want input from each function before we finalise.",
+        "additionalType": "user",
+        "disambiguatingDescription": "Opening the strategy alignment session."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-strategy-2024/msg_0002",
+        "identifier": "msg_0002",
+        "sender": {"@type": "Person", "identifier": "cfo"},
+        "dateCreated": "2024-03-01T09:05:00Z",
+        "text": "From a finance perspective, operational efficiency must be priority one. We're carrying 18% overhead above industry benchmark. Cutting that to 12% would free $40M for strategic investment.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CFO introduces operational efficiency priority."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-strategy-2024/msg_0003",
+        "identifier": "msg_0003",
+        "sender": {"@type": "Person", "identifier": "cto"},
+        "dateCreated": "2024-03-01T09:12:00Z",
+        "text": "Agreed on efficiency, but product-led growth is equally critical. Our NPS is 72 — investing in self-serve onboarding could drive 30% ARR growth without proportional headcount growth.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CTO advocates for product-led growth."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-strategy-2024/msg_0004",
+        "identifier": "msg_0004",
+        "sender": {"@type": "Person", "identifier": "ceo"},
+        "dateCreated": "2024-03-01T09:20:00Z",
+        "text": "Both valid. I'll add a third: APAC market expansion. The TAM there is $2.1B and we have <1% share. A targeted $15M investment could capture 3–5% within 24 months.",
+        "additionalType": "user",
+        "disambiguatingDescription": "CEO introduces market expansion priority."
+      },
+      {
+        "@type": "Message",
+        "@id": "subconscious://messages/demo-strategy-2024/msg_0005",
+        "identifier": "msg_0005",
+        "sender": {"@type": "Person", "identifier": "cfo"},
+        "dateCreated": "2024-03-01T09:35:00Z",
+        "text": "The freed $40M from efficiency provides headroom for both product investment ($20M) and APAC entry ($15M) with $5M contingency. I approve this allocation framework.",
+        "additionalType": "assistant",
+        "disambiguatingDescription": "CFO signs off on capital allocation."
+      }
+    ]
+  }
+}
