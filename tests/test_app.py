@@ -28,3 +28,15 @@ class TestAppHtml:
     def test_app_html_mentions_subconscious(self):
         html = get_app_html()
         assert "Subconscious" in html
+
+    def test_app_html_links_to_conversations_browser(self):
+        html = get_app_html()
+        assert "/view/conversations" in html
+
+    def test_app_html_links_to_monitor(self):
+        html = get_app_html()
+        assert "/monitor" in html
+
+    def test_app_html_mentions_no_react(self):
+        html = get_app_html()
+        assert "React" not in html or "no React" in html

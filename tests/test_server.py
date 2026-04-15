@@ -38,13 +38,15 @@ class TestMCPToolRegistration:
         assert expected.issubset(tool_names), f"Missing schema tools: {expected - tool_names}"
 
     def test_mcp_apps_tools_registered(self):
-        """show_conversations must be registered as the MCP Apps entry-point tool."""
+        """show_conversations is a model-visible @mcp.tool(); fetch_* are app-internal."""
         tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
         tool_names = {t.name for t in tools}
-        # show_conversations is model-visible (UI entry point)
+        # show_conversations is registered directly on mcp — model-visible
         assert "show_conversations" in tool_names
-        # load_orchestrations and load_conversation are app-only backend tools
-        # (visibility=["app"]) — intentionally hidden from the model
+        # fetch_orchestrations and fetch_conversation are registered on conversations_app
+        # (FastMCPApp) — they are app-internal and must NOT be exposed to the model
+        assert "fetch_orchestrations" not in tool_names
+        assert "fetch_conversation" not in tool_names
 
     def test_expected_resource_templates_registered(self):
         templates = asyncio.get_event_loop().run_until_complete(mcp.list_resource_templates())
@@ -194,11 +196,21 @@ class TestMCPAppsConversations:
         assert data["total"] == 0
         assert data["messages"] == []
 
-    def test_show_conversations_registered_as_ui_tool(self):
-        """show_conversations must be the MCP Apps entry-point tool."""
-        tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
-        names = {t.name for t in tools}
-        assert "show_conversations" in names
+    def test_show_conversations_returns_jsonld_itemlist(self):
+        """show_conversations is a regular MCP tool returning Schema.org ItemList JSON-LD."""
+        from subconscious.server import show_conversations
+        data = show_conversations()
+        assert data["@type"] == "ItemList"
+        assert data["@context"] == "https://schema.org/"
+        assert "view_url" in data
+        assert data["view_url"].startswith("/view/conversations")
+        assert isinstance(data["itemListElement"], list)
+
+    def test_show_conversations_filtered_view_url(self):
+        """show_conversations with status= passes it through to the view_url."""
+        from subconscious.server import show_conversations
+        data = show_conversations(status="active")
+        assert "status=active" in data["view_url"]
 
 
 class TestMCPSchemaTools:

@@ -108,7 +108,7 @@ mcp = FastMCP(
 
 
 # ---------------------------------------------------------------------------
-# FastMCPApp — rich Prefab UI for browsing conversations
+# FastMCPApp — Conversations App (data tools, app-internal)
 # ---------------------------------------------------------------------------
 
 conversations_app = FastMCPApp("Conversations")
@@ -147,112 +147,43 @@ def fetch_conversation(orchestration_id: str) -> dict[str, Any]:
     return _conversation_to_jsonld(orchestration_id, msgs, orch)
 
 
-@conversations_app.ui()
-def show_conversations(status: str | None = None) -> Any:
-    """Browse multi-agent orchestration conversations.
-
-    Opens an interactive UI that lists all orchestrations and lets you drill
-    into any conversation to see the full Schema.org JSON-LD message history.
-
-    Args:
-        status: Optional filter to show only ``active`` or ``completed`` orchestrations.
-
-    Returns:
-        A Prefab UI component tree rendered by the MCP client.
-    """
-    from prefab_ui.app import PrefabApp
-    from prefab_ui.components.badge import Badge
-    from prefab_ui.components.card import Card, CardContent, CardHeader, CardTitle
-    from prefab_ui.components.column import Column
-    from prefab_ui.components.data_table import DataTable, DataTableColumn
-    from prefab_ui.components.heading import Heading
-    from prefab_ui.components.row import Row
-    from prefab_ui.components.text import Text
-
-    orchestrations = fetch_orchestrations(status)
-
-    # Build the orchestrations table rows
-    rows = []
-    for o in orchestrations:
-        action_status = o.get("actionStatus", "")
-        if "Completed" in action_status:
-            status_label = "Completed"
-        elif "Failed" in action_status:
-            status_label = "Failed"
-        else:
-            status_label = "Active"
-
-        agents = o.get("agents", [])
-        agents_str = ", ".join(agents) if agents else "—"
-
-        rows.append({
-            "id": o.get("orchestration_id", ""),
-            "purpose": o.get("purpose", ""),
-            "status": status_label,
-            "agents": agents_str,
-            "messages": str(o.get("message_count", 0)),
-            "created": o.get("created_at", "")[:10] if o.get("created_at") else "—",
-        })
-
-    title = "Multi-Agent Conversations"
-    if status:
-        title += f" — {status.title()}"
-
-    with PrefabApp(
-        title=title,
-        state={
-            # Populated on mount by load_orchestrations / load_conversation calls
-            "orchestrations": rows,
-            "selected_id": None,       # set by UI when user clicks a row
-            "conversation": None,      # set by fetch_conversation backend tool
-        },
-    ) as app:
-        with Column(css_class="p-6 gap-6"):
-            with Row(css_class="items-center justify-between"):
-                Heading(title)
-                Badge(
-                    f"{len(orchestrations)} orchestration{'s' if len(orchestrations) != 1 else ''}",
-                    variant="secondary",
-                )
-
-            if not rows:
-                with Card():
-                    with CardContent(css_class="py-8 text-center"):
-                        Text(
-                            "No orchestrations found."
-                            + (f" (filter: {status})" if status else ""),
-                            css_class="text-muted-foreground",
-                        )
-            else:
-                with Card():
-                    with CardHeader():
-                        CardTitle("Orchestrations")
-                    with CardContent():
-                        DataTable(
-                            data=rows,
-                            columns=[
-                                DataTableColumn(key="purpose", header="Purpose"),
-                                DataTableColumn(key="status", header="Status"),
-                                DataTableColumn(key="agents", header="Agents"),
-                                DataTableColumn(key="messages", header="Messages"),
-                                DataTableColumn(key="created", header="Created"),
-                            ],
-                        )
-
-            if len(orchestrations) > 0:
-                with Card(css_class="mt-2"):
-                    with CardContent(css_class="py-4"):
-                        Text(
-                            "Select an orchestration above to load its full conversation. "
-                            "Use the 'fetch_conversation' tool with the orchestration ID.",
-                            css_class="text-sm text-muted-foreground",
-                        )
-
-    return app
-
-
 # Register the Conversations MCP App with the server
 mcp.add_provider(conversations_app)
+
+
+# ---------------------------------------------------------------------------
+# MCP Tool — show_conversations (model-visible entry point)
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def show_conversations(status: str | None = None) -> dict[str, Any]:
+    """Browse multi-agent orchestration conversations.
+
+    Returns a Schema.org ItemList of orchestrations as JSON-LD and a
+    ``view_url`` pointing to the interactive HTML5/CSS3 conversation browser,
+    which renders the data entirely client-side (vanilla JavaScript, no React).
+
+    Args:
+        status: Optional filter — ``active``, ``completed``, or ``failed``.
+
+    Returns:
+        Schema.org ItemList JSON-LD with ``view_url`` for the browser UI.
+    """
+    orchestrations = fetch_orchestrations(status)
+    qs = f"?status={status}" if status else ""
+    view_url = f"/view/conversations{qs}"
+    return {
+        "@context": _SCHEMA_ORG,
+        "@type": "ItemList",
+        "name": "Multi-Agent Conversations",
+        "description": (
+            f"Open the conversation browser at: {view_url}  "
+            "Rendered client-side from Schema.org JSON-LD."
+        ),
+        "view_url": view_url,
+        "numberOfItems": len(orchestrations),
+        "itemListElement": orchestrations,
+    }
 
 
 # ---------------------------------------------------------------------------
