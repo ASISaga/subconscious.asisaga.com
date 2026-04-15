@@ -85,7 +85,7 @@ _HTML_HEADERS = {"Content-Type": "text/html; charset=utf-8"}
 # Azure Functions application — created before any route registration
 # ---------------------------------------------------------------------------
 
-_app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 # ---------------------------------------------------------------------------
 # Route group 1 — Homepage (minimal deps; always registered first)
@@ -96,7 +96,7 @@ _app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 try:
     from subconscious.app import get_app_html as _get_app_html
 
-    @_app.route(route="", methods=["GET"])
+    @app.route(route="", methods=["GET"])
     def homepage(req: func.HttpRequest) -> func.HttpResponse:
         """Serve the Subconscious landing page."""
         logger.debug("GET / → homepage")
@@ -114,13 +114,13 @@ try:
     from subconscious.templates import conversations_page as _conversations_page
     from subconscious.templates import monitor_page as _monitor_page
 
-    @_app.route(route="view/conversations", methods=["GET"])
+    @app.route(route="view/conversations", methods=["GET"])
     def view_conversations(req: func.HttpRequest) -> func.HttpResponse:
         """Serve the HTML5/CSS3 conversation browser SPA."""
         logger.debug("GET /view/conversations")
         return func.HttpResponse(_conversations_page(), headers=_HTML_HEADERS)
 
-    @_app.route(route="monitor", methods=["GET"])
+    @app.route(route="monitor", methods=["GET"])
     def view_monitor(req: func.HttpRequest) -> func.HttpResponse:
         """Serve the static monitoring/troubleshooting page."""
         logger.debug("GET /monitor")
@@ -139,7 +139,7 @@ try:
     from subconscious.server import _conversation_to_jsonld, _orchestration_to_jsonld
     from subconscious.storage import _demo_conversations_dir, _use_demo_data
 
-    @_app.route(route="data/orchestrations", methods=["GET"])
+    @app.route(route="data/orchestrations", methods=["GET"])
     def data_orchestrations(req: func.HttpRequest) -> func.HttpResponse:
         """Return all orchestrations as a JSON array of Schema.org Action JSON-LD.
 
@@ -150,7 +150,7 @@ try:
         body = json.dumps([_orchestration_to_jsonld(o) for o in raw])
         return func.HttpResponse(body, headers=_JSON_HEADERS)
 
-    @_app.route(route="data/orchestrations/{oid}", methods=["GET"])
+    @app.route(route="data/orchestrations/{oid}", methods=["GET"])
     def data_orchestration(req: func.HttpRequest) -> func.HttpResponse:
         """Return a single orchestration as Schema.org Action JSON-LD.
 
@@ -167,7 +167,7 @@ try:
         doc["object"] = _conversation_to_jsonld(oid, messages, orch)
         return func.HttpResponse(json.dumps(doc), headers=_JSON_HEADERS)
 
-    @_app.route(route="data/health", methods=["GET"])
+    @app.route(route="data/health", methods=["GET"])
     def data_health(req: func.HttpRequest) -> func.HttpResponse:
         """Return health/status information for the monitor page.
 
@@ -213,7 +213,7 @@ try:
 
     _mcp_asgi = func.AsgiMiddleware(_mcp.http_app(stateless_http=True))
 
-    @_app.route(route="mcp/{*rest}", methods=["GET", "POST", "DELETE", "PUT"])
+    @app.route(route="mcp/{*rest}", methods=["GET", "POST", "DELETE", "PUT"])
     async def mcp_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         """Proxy all MCP protocol traffic to the FastMCP streamable-HTTP handler."""
         logger.debug("MCP %s %s", req.method, req.url)
@@ -228,9 +228,3 @@ except Exception as _exc:  # noqa: BLE001
 # ---------------------------------------------------------------------------
 
 logger.info("function_app loaded successfully")
-
-# ---------------------------------------------------------------------------
-# Expose the FunctionApp instance as ``app`` for the Azure Functions host
-# ---------------------------------------------------------------------------
-
-app = _app
