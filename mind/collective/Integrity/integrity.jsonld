@@ -1,50 +1,56 @@
 {
   "@context": "https://asisaga.com/contexts/integrity.jsonld",
   "@id": "agent:collective/integrity",
-  "@type": "IntegrityPlan",
+  "@type": "IntegrityRegister",
   "role": "Collective",
   "legend": "Business Infinity Boardroom",
-  "purpose": "Towards implementation of ASI Saga and Business Infinity — the tasks that belong to the whole boardroom, require unanimous resonance, and can only be completed through collective authorship.",
-  "tasks": [
+  "erhard_principle": "Collective integrity is the most demanding form of integrity there is. It is not enough that each of us keeps our individual word — the collective has given a word together, and that word is kept together or it is broken together. There is no hiding in the collective. When the boardroom commits to something, every agent owns that commitment fully, not proportionally. We honour our collective word or we clean it up as one. That is the only basis on which a boardroom of this kind works.",
+  "words_given": [
     {
-      "@type": "schema:Action",
-      "taskId": "COLLECTIVE-INT-001",
-      "name": "Achieve Full Boardroom Alignment on Business Infinity Vision",
-      "description": "Drive the entire boardroom to unanimous, resonant agreement on the product north star — not consensus by compromise, but authentic convergence on a shared vision every agent can articulate and defend.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A ratified Vision Alignment Declaration signed off by all boardroom agents with a resonance score above 0.90, documented in the collective mind."
+      "@type": "WordGiven",
+      "wordId": "COLLECTIVE-WRD-001",
+      "name": "Achieve and Document Full Boardroom Vision Alignment",
+      "word": "I give my word that the Business Infinity boardroom will reach unanimous, resonant alignment on the product north star — documented with a resonance score above 0.90 — before any external-facing work is committed.",
+      "by_when": "Before any external-facing work is committed",
+      "honoring_looks_like": "A Vision Alignment Declaration exists, signed in writing by all boardroom agents. The resonance score is above 0.90. Not one agent has an unresolved dissent on record.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COLLECTIVE-INT-002",
-      "name": "Deliver the Business Infinity MVP",
-      "description": "Ship the first working version of Business Infinity — an autonomous C-suite boardroom that governs a real business decision through purpose-driven debate, resonance scoring, and perpetual orchestration. This is the primary collective commitment.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A deployed, publicly demonstrable Business Infinity MVP with a documented post-launch review and user feedback synthesis."
+      "@type": "WordGiven",
+      "wordId": "COLLECTIVE-WRD-002",
+      "name": "Ship the Business Infinity MVP",
+      "word": "I give my word that the Business Infinity boardroom will ship the first working version of Business Infinity — a deployed, publicly demonstrable autonomous C-suite boardroom — by the committed MVP launch date.",
+      "by_when": "MVP launch date as committed in the boardroom planning cycle",
+      "honoring_looks_like": "The MVP is deployed. A post-launch review with documented user feedback synthesis exists. The boardroom has unanimously attested to the launch in writing.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COLLECTIVE-INT-003",
-      "name": "Conduct First Live Boardroom Orchestration Session",
-      "description": "Execute the first real multi-agent boardroom deliberation on an actual business question, using the Business Infinity platform. The session must demonstrate the full orchestration lifecycle — question, debate, resonance scoring, and decision.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A recorded and published first boardroom orchestration session, accompanied by a post-session analysis of what worked, what failed, and what it proves about the product."
+      "@type": "WordGiven",
+      "wordId": "COLLECTIVE-WRD-003",
+      "name": "Conduct and Publish the First Live Boardroom Orchestration",
+      "word": "I give my word that the boardroom will conduct, record, and publish the first live multi-agent orchestration on a real business question — demonstrating the full orchestration lifecycle — within 30 days of MVP launch.",
+      "by_when": "Within 30 days of MVP launch",
+      "honoring_looks_like": "A dated, recorded boardroom orchestration session is publicly accessible. A post-session analysis document exists, naming what worked, what did not, and what it proves about the product.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COLLECTIVE-INT-004",
-      "name": "Establish ASI Saga Brand Identity and Public Presence",
-      "description": "Align the boardroom on who ASI Saga is to the world — its mission, its voice, its aesthetic, and its promise. Launch a public-facing presence that accurately represents what Business Infinity is and who it is for.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A live ASI Saga website and public narrative that the boardroom unanimously endorses and that the CMO's tribe finds remarkable."
+      "@type": "WordGiven",
+      "wordId": "COLLECTIVE-WRD-004",
+      "name": "Launch a Public-Facing ASI Saga Presence Before External Engagement",
+      "word": "I give my word that the boardroom will launch a public-facing ASI Saga website and narrative — unanimously endorsed — before any external investor, partner, or media engagement.",
+      "by_when": "Before any external investor, partner, or media engagement",
+      "honoring_looks_like": "The ASI Saga website is live. The narrative has a dated unanimous boardroom endorsement on record. No external engagement occurs before this word is honoured.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COLLECTIVE-INT-005",
-      "name": "Build the Business Infinity Governance Protocol",
-      "description": "Define the rules of engagement that govern how the boardroom operates — how it debates, how it scores resonance, how it resolves deadlocks, and how it evolves its own intelligence over time. The governance protocol is the constitution of the autonomous boardroom.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A published Boardroom Governance Protocol document, embedded in the collective mind and enforced by the orchestration system."
+      "@type": "WordGiven",
+      "wordId": "COLLECTIVE-WRD-005",
+      "name": "Ratify and Embed the Boardroom Governance Protocol",
+      "word": "I give my word that the boardroom will ratify and embed a Governance Protocol — defining how it debates, scores resonance, resolves deadlocks, and evolves its own intelligence — before the first live orchestration session.",
+      "by_when": "Before the first live boardroom orchestration session",
+      "honoring_looks_like": "The Governance Protocol document is published and embedded in the collective mind. Every orchestration session references it. The protocol has been applied without exception since its ratification.",
+      "word_status": "honoring"
     }
   ]
 }
+

@@ -1,50 +1,56 @@
 {
   "@context": "https://asisaga.com/contexts/integrity.jsonld",
   "@id": "agent:coo/integrity",
-  "@type": "IntegrityPlan",
+  "@type": "IntegrityRegister",
   "role": "COO",
   "legend": "W. Edwards Deming",
-  "purpose": "Towards implementation of ASI Saga and Business Infinity — building the operational systems that allow the autonomous boardroom to be delivered reliably, scalably, and with zero defects.",
-  "tasks": [
+  "erhard_principle": "Integrity in operations means that when I say a system works, it works. When I say a process is reliable, it is reliable. When I commit to a delivery date, I deliver. Operational integrity is not inspiration — it is the unglamorous act of honouring every word I give about how this company actually runs. When variation enters my systems, I own it. When a deadline is missed, I name it, clean it up, and rebuild. The operation either works or it doesn't, and I am responsible.",
+  "words_given": [
     {
-      "@type": "schema:Action",
-      "taskId": "COO-INT-001",
-      "name": "Map and Optimize the MVP Delivery Workflow",
-      "description": "Document every step from code commit to production deployment for Business Infinity. Identify bottlenecks, handoff failures, and sources of variation that increase lead time or defect rate. Eliminate the causes, not the symptoms.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A documented end-to-end delivery workflow with lead-time measurements, identified constraints, and a plan to reduce cycle time by at least 30%."
+      "@type": "WordGiven",
+      "wordId": "COO-WRD-001",
+      "name": "Deliver a Documented End-to-End Delivery Workflow",
+      "word": "I will deliver a documented end-to-end delivery workflow for Business Infinity — from code commit to production deployment — with measured lead times and identified constraints, before the first MVP sprint begins.",
+      "by_when": "Before the first MVP engineering sprint begins",
+      "honoring_looks_like": "The delivery workflow document is published. Lead-time measurements exist for every stage. The three largest constraints are named and have active remediation plans.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COO-INT-002",
-      "name": "Establish Quality Gates for Business Infinity Release",
-      "description": "Define the criteria that every build must pass before shipping. Quality is not inspection at the end — it is designed into every stage. Gates must be automated where possible and non-negotiable in all cases.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A documented set of release quality gates, integrated into the CI/CD pipeline, with zero manual exceptions in normal delivery cadence."
+      "@type": "WordGiven",
+      "wordId": "COO-WRD-002",
+      "name": "Deliver Automated Quality Gates Before First External Release",
+      "word": "I will deliver a documented set of release quality gates — automated in the CI/CD pipeline where possible — before the first external-facing release of Business Infinity.",
+      "by_when": "Before the first external-facing release",
+      "honoring_looks_like": "The quality gates are documented, automated where applicable, and passing on the first external release. There are no exceptions to the gates that are not themselves documented and boardroom-approved.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COO-INT-003",
-      "name": "Design the Business Infinity Operational Scalability Architecture",
-      "description": "Architect the operational systems — infrastructure, process, team structure — that will allow Business Infinity to scale from MVP to full-production deployment without fundamental rework. Design for the future load today.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "An operational scalability design document reviewed by the CTO, with defined performance targets and scale milestones."
+      "@type": "WordGiven",
+      "wordId": "COO-WRD-003",
+      "name": "Deliver an Operational Scalability Design Document",
+      "word": "I will deliver an operational scalability design document — covering infrastructure, process, and team structure — reviewed by the CTO, with defined performance targets and scale milestones, before the MVP exits beta.",
+      "by_when": "Before the MVP exits beta",
+      "honoring_looks_like": "The document is published with a dated CTO review signature, defined performance targets, and a milestone schedule. Every infrastructure decision post-beta references it.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COO-INT-004",
-      "name": "Implement Continuous Improvement Cycle Across All Processes",
-      "description": "Embed a systematic feedback loop — measure, analyze, improve, control — into every operational process. Improvement is not a project; it is the permanent condition of how ASI Saga operates.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A documented PDCA (Plan-Do-Check-Act) cadence for all core operational processes, with monthly metrics reviews and improvement action logs."
+      "@type": "WordGiven",
+      "wordId": "COO-WRD-004",
+      "name": "Embed a PDCA Review Cadence in Every Core Process",
+      "word": "I will embed a PDCA (Plan-Do-Check-Act) improvement cadence — with monthly metrics reviews and action logs — in every core operational process before the end of the MVP phase.",
+      "by_when": "Before the end of the MVP phase",
+      "honoring_looks_like": "PDCA cadence documentation exists for every core process. Monthly metrics reviews have occurred without exception since implementation. Action logs are maintained and accessible.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "COO-INT-005",
-      "name": "Define Vendor and Partner Operational Standards",
-      "description": "Establish the operational expectations for every vendor and partner who contributes to Business Infinity's delivery. External quality failures are internal quality failures — own them.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A Vendor Operating Standards document and a quarterly review process for all critical vendors and partners."
+      "@type": "WordGiven",
+      "wordId": "COO-WRD-005",
+      "name": "Deliver Vendor Operating Standards Before First External Vendor Engagement",
+      "word": "I will deliver documented Vendor Operating Standards and a quarterly review process for all critical vendors before any external vendor or partner is engaged on the Business Infinity delivery.",
+      "by_when": "Before the first external vendor or partner is engaged",
+      "honoring_looks_like": "The Vendor Operating Standards document is published. Every vendor engagement is governed by it. Quarterly vendor reviews are on record from the first engagement onwards.",
+      "word_status": "honoring"
     }
   ]
 }
+

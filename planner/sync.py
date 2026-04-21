@@ -62,7 +62,7 @@ from planner.responsibilities import (
     ResponsibilitiesLoader,
     RoleResponsibilities,
 )
-from planner.tasks import IntegrityPlan, TasksLoader
+from planner.tasks import IntegrityRegister, WordsLoader
 
 logger = logging.getLogger(__name__)
 
@@ -521,18 +521,25 @@ class PlannerMonitor:
 
 
 class TasksSync:
-    """Syncs CXO integrity tasks from JSON-LD files into Microsoft Planner.
+    """Syncs CXO integrity words-given from JSON-LD files into Microsoft Planner.
 
     Reads ``mind/{agent_id}/Integrity/integrity.jsonld`` and creates one
     Planner plan per CXO with a single ``"ASI Saga & Business Infinity"``
-    bucket containing one task per integrity task.
+    bucket containing one task per word given.
+
+    Each task carries:
+
+    - **title** — ``word.name``
+    - **description** — the word given, the by-when, and what honouring
+      looks like, composed into a structured task details description
+    - **percent_complete** — updated independently by the owning CXO
 
     Parameters
     ----------
     planner_client:
         Authenticated :class:`~planner.client.PlannerClient`.
     loader:
-        :class:`~planner.tasks.TasksLoader` instance.  A default instance is
+        :class:`~planner.tasks.WordsLoader` instance.  A default instance is
         created when *None*.
     """
 
@@ -541,18 +548,18 @@ class TasksSync:
     def __init__(
         self,
         planner_client: PlannerClient,
-        loader: TasksLoader | None = None,
+        loader: WordsLoader | None = None,
     ) -> None:
         self._client = planner_client.graph
-        self._loader = loader or TasksLoader()
+        self._loader = loader or WordsLoader()
 
     # ── Public API ───────────────────────────────────────────────────────────
 
     async def sync_agent(self, agent_id: str, group_id: str | None = None) -> SyncResult:
-        """Sync all integrity tasks for *agent_id* to Planner.
+        """Sync all words given for *agent_id* to Planner.
 
         Creates one plan per CXO (if not already present) and one task per
-        integrity task inside the ``"ASI Saga & Business Infinity"`` bucket.
+        word given inside the ``"ASI Saga & Business Infinity"`` bucket.
         Existing tasks (matched by title) are skipped to avoid duplicates.
 
         Parameters
@@ -569,21 +576,21 @@ class TasksSync:
         SyncResult
             Summary of created buckets and tasks.
         """
-        plan_data = self._loader.load_agent(agent_id)
-        if plan_data is None:
+        register = self._loader.load_agent(agent_id)
+        if register is None:
             raise ValueError(f"No integrity file found for agent: {agent_id!r}")
 
-        resolved_group_id = group_id or _resolve_group_id(plan_data.role)
-        plan_title = f"{plan_data.role} Integrity"
+        resolved_group_id = group_id or _resolve_group_id(register.role)
+        plan_title = f"{register.role} Integrity"
         plan_id = await self._get_or_create_plan(plan_title, resolved_group_id)
 
         result = SyncResult(
             agent_id=agent_id,
-            role=plan_data.role,
+            role=register.role,
             plan_id=plan_id,
             plan_title=plan_title,
         )
-        await self._sync_tasks(plan_data, plan_id, result)
+        await self._sync_words(register, plan_id, result)
 
         logger.info(
             "TasksSync complete for %s: plan=%s tasks_created=%d skipped=%d errors=%d",
@@ -596,7 +603,7 @@ class TasksSync:
         return result
 
     async def sync_all(self, group_id: str | None = None) -> list[SyncResult]:
-        """Sync integrity tasks for all available agents.
+        """Sync words given for all available agents.
 
         Parameters
         ----------
@@ -669,11 +676,12 @@ class TasksSync:
         plan_id: str,
         bucket_id: str,
         title: str,
-        description: str,
-        task_id: str,
-        result_text: str,
+        word: str,
+        word_id: str,
+        by_when: str,
+        honoring_looks_like: str,
     ) -> str:
-        """Create a Planner task and attach its description via task details."""
+        """Create a Planner task for a word given and attach structured details."""
         new_task = PlannerTask()
         new_task.plan_id = plan_id
         new_task.bucket_id = bucket_id
@@ -684,9 +692,12 @@ class TasksSync:
         planner_id = created_task.id
 
         details = PlannerTaskDetails()
-        detail_lines = [f"TASK ID\n{task_id}", f"DESCRIPTION\n{description}"]
-        if result_text:
-            detail_lines.append(f"RESULT\n{result_text}")
+        detail_lines = [
+            f"WORD ID\n{word_id}",
+            f"WORD GIVEN\n{word}",
+            f"BY WHEN\n{by_when}",
+            f"HONOURING LOOKS LIKE\n{honoring_looks_like}",
+        ]
         details.description = "\n\n".join(detail_lines)
 
         await self._client.planner.tasks.by_planner_task_id(planner_id).details.get()
@@ -700,35 +711,36 @@ class TasksSync:
         logger.debug("Created task: %s (%s)", title, planner_id)
         return planner_id
 
-    async def _sync_tasks(
+    async def _sync_words(
         self,
-        plan_data: IntegrityPlan,
+        register: IntegrityRegister,
         plan_id: str,
         result: SyncResult,
     ) -> None:
-        """Sync all tasks in *plan_data* into the integrity Planner bucket."""
+        """Sync all words given in *register* into the integrity Planner bucket."""
         bucket_id = await self._get_or_create_bucket(plan_id)
         result.buckets_synced += 1
 
         existing_titles = await self._get_existing_task_titles(plan_id)
 
-        for task in plan_data.tasks:
-            if task.name in existing_titles:
-                logger.debug("Skipping existing task: %s", task.name)
+        for word in register.words_given:
+            if word.name in existing_titles:
+                logger.debug("Skipping existing task: %s", word.name)
                 result.tasks_skipped += 1
                 continue
             try:
                 await self._create_task(
                     plan_id=plan_id,
                     bucket_id=bucket_id,
-                    title=task.name,
-                    description=task.description,
-                    task_id=task.task_id,
-                    result_text=task.result,
+                    title=word.name,
+                    word=word.word,
+                    word_id=word.word_id,
+                    by_when=word.by_when,
+                    honoring_looks_like=word.honoring_looks_like,
                 )
                 result.tasks_created += 1
             except (ODataError, ValueError, RuntimeError) as exc:
-                msg = f"Failed to create task {task.name!r}: {exc}"
+                msg = f"Failed to create task {word.name!r}: {exc}"
                 logger.error(msg)
                 result.errors.append(msg)
 

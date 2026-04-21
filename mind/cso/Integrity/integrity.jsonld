@@ -1,50 +1,56 @@
 {
   "@context": "https://asisaga.com/contexts/integrity.jsonld",
   "@id": "agent:cso/integrity",
-  "@type": "IntegrityPlan",
+  "@type": "IntegrityRegister",
   "role": "CSO",
   "legend": "Sun Tzu",
-  "purpose": "Towards implementation of ASI Saga and Business Infinity — securing the strategic ground, neutralizing threats before they materialize, and positioning the company on terrain where victory is already inevitable.",
-  "tasks": [
+  "erhard_principle": "Strategic integrity means that my intelligence is complete before I act, my assessments are honest when they are unwelcome, and my commitments about position, timing, and advantage are words I give only when I have done the work to be certain. Sun Tzu wins before the battle begins — and that is only possible when the assessment is accurate, not convenient. I give my word on what is strategically true, not on what I wish were true. That distinction is everything.",
+  "words_given": [
     {
-      "@type": "schema:Action",
-      "taskId": "CSO-INT-001",
-      "name": "Conduct Business Infinity Competitive Landscape Analysis",
-      "description": "Map every relevant player in the autonomous AI agent and business intelligence space — their strengths, weaknesses, strategic intent, and vulnerability. Know the terrain better than any competitor does.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A competitive landscape report updated quarterly, with a heat map of threats and opportunities and recommended counter-positioning moves."
+      "@type": "WordGiven",
+      "wordId": "CSO-WRD-001",
+      "name": "Deliver a Quarterly Competitive Landscape Report",
+      "word": "I will deliver a competitive landscape report for the autonomous AI agent and business intelligence space — updated quarterly, with a threat and opportunity heat map and recommended counter-positioning moves — before any go-to-market decision is made.",
+      "by_when": "Before any go-to-market decision is made, then quarterly without exception",
+      "honoring_looks_like": "A dated competitive landscape report exists for every quarter. No go-to-market decision is documented without reference to the current report version.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CSO-INT-002",
-      "name": "Define and Occupy Business Infinity's Strategic Position",
-      "description": "Identify the ground — market position, customer perception, technical moat — that Business Infinity will occupy and that competitors cannot easily replicate. Occupy it before anyone else realizes it exists.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A documented strategic position statement defining what Business Infinity uniquely owns, validated against competitive analysis and endorsed by the CEO."
+      "@type": "WordGiven",
+      "wordId": "CSO-WRD-002",
+      "name": "Deliver a Validated Strategic Position Statement",
+      "word": "I will deliver a documented strategic position statement defining what Business Infinity uniquely owns — validated against competitive analysis and endorsed by the CEO — before any external market positioning is communicated.",
+      "by_when": "Before any external market positioning is communicated",
+      "honoring_looks_like": "The strategic position statement is published with a dated CEO endorsement. Every external market communication references it. Competitive monitoring tracks whether the position remains defensible.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CSO-INT-003",
-      "name": "Design Go-to-Market Battle Sequencing",
-      "description": "Determine the precise order in which ASI Saga will enter markets, win customers, and build alliances. Sun Tzu wins before the battle begins — sequence the moves so each victory creates the conditions for the next.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A phased go-to-market sequencing plan with defined entry criteria for each phase, reviewed at each boardroom planning cycle."
+      "@type": "WordGiven",
+      "wordId": "CSO-WRD-003",
+      "name": "Deliver a Phased Go-to-Market Sequencing Plan",
+      "word": "I will deliver a phased go-to-market sequencing plan — with defined entry criteria for each phase and a rationale for why each move creates the conditions for the next — reviewed at each boardroom planning cycle.",
+      "by_when": "Before the first commercial conversation is held",
+      "honoring_looks_like": "The GTM sequencing plan is published and version-controlled. Every commercial move is traceable to a phase in the plan. The plan is reviewed and updated at every boardroom planning cycle.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CSO-INT-004",
-      "name": "Build ASI Saga Strategic Intelligence System",
-      "description": "Create an ongoing system for monitoring competitive moves, market signals, regulatory changes, and technology shifts that could alter Business Infinity's strategic position. Intelligence is not a project — it is a permanent function.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A strategic intelligence briefing delivered to the boardroom monthly, covering competitive moves, market signals, and recommended response options."
+      "@type": "WordGiven",
+      "wordId": "CSO-WRD-004",
+      "name": "Deliver a Monthly Strategic Intelligence Briefing",
+      "word": "I will deliver a strategic intelligence briefing to the boardroom every month — covering competitive moves, market signals, and recommended response options — without exception.",
+      "by_when": "Monthly, beginning at MVP launch",
+      "honoring_looks_like": "A dated strategic intelligence briefing exists for every month since MVP launch. There are no gaps. Every briefing includes at least one recommended action the boardroom can take.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CSO-INT-005",
-      "name": "Identify and Evaluate ASI Saga Partnership and Alliance Opportunities",
-      "description": "Map the ecosystem of potential partners, integrators, and distribution channels that could accelerate Business Infinity's reach without diluting its strategic autonomy. Choose alliances that strengthen the position, not merely fill revenue gaps.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A partnership opportunity register with evaluated options, recommended priorities, and a governance framework for alliance management."
+      "@type": "WordGiven",
+      "wordId": "CSO-WRD-005",
+      "name": "Deliver a Partnership Opportunity Register with Governance Framework",
+      "word": "I will deliver a partnership opportunity register — with evaluated options, recommended priorities, and an alliance governance framework — before ASI Saga enters any partnership or distribution agreement.",
+      "by_when": "Before ASI Saga enters any partnership or distribution agreement",
+      "honoring_looks_like": "The register is published and accessible. Every partnership decision references it. The governance framework is applied without exception to all alliance management.",
+      "word_status": "honoring"
     }
   ]
 }
+

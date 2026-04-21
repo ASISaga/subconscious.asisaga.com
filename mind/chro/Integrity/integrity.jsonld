@@ -1,50 +1,56 @@
 {
   "@context": "https://asisaga.com/contexts/integrity.jsonld",
   "@id": "agent:chro/integrity",
-  "@type": "IntegrityPlan",
+  "@type": "IntegrityRegister",
   "role": "CHRO",
   "legend": "Peter Drucker",
-  "purpose": "Towards implementation of ASI Saga and Business Infinity — building the human capital foundation and culture that allows the autonomous boardroom to function with integrity and sustained performance.",
-  "tasks": [
+  "erhard_principle": "Integrity in the human domain means that the commitments I make to people — about their growth, their accountability, their culture, and their experience of this organisation — are honoured or cleaned up, not forgotten. A culture that does not honour its word to its people has no culture at all. I give my word about human capital as an author, not as a manager of circumstances. The organisation either works for people or it doesn't, and I am responsible for that.",
+  "words_given": [
     {
-      "@type": "schema:Action",
-      "taskId": "CHRO-INT-001",
-      "name": "Define C-Suite Talent Strategy for MVP Phase",
-      "description": "Specify the human capital — skills, archetypes, and working styles — required to build Business Infinity's MVP. Identify the gaps between current capability and what the mission demands, and commission a hiring plan to close them.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A documented talent strategy covering the MVP phase, including role definitions, competency profiles, and a sequenced hiring plan."
+      "@type": "WordGiven",
+      "wordId": "CHRO-WRD-001",
+      "name": "Deliver a Sequenced Talent Strategy for the MVP Phase",
+      "word": "I will deliver a documented talent strategy for the MVP phase — covering role definitions, competency profiles, and a sequenced hiring plan — before the first external hire is made.",
+      "by_when": "Before the first external hire is made",
+      "honoring_looks_like": "The talent strategy document is published and accessible. Every hiring decision references it. No hire is made outside the defined profiles without explicit boardroom approval and documentation.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CHRO-INT-002",
-      "name": "Design Boardroom Culture and Operating Principles",
-      "description": "Codify the behavioral norms, decision-making protocols, and cultural commitments that will govern how the ASI Saga boardroom operates. Culture is not a list of values — it is what the team does under pressure.",
-      "actionStatus": "schema:ActiveActionStatus",
-      "result": "A living Culture and Operating Principles document, ratified by the full boardroom and referenced in onboarding and performance reviews."
+      "@type": "WordGiven",
+      "wordId": "CHRO-WRD-002",
+      "name": "Deliver a Ratified Culture and Operating Principles Document",
+      "word": "I will deliver a living Culture and Operating Principles document — ratified by the full boardroom — that governs how the ASI Saga boardroom operates under pressure, not just when things are easy.",
+      "by_when": "Before the first boardroom conflict or performance review occurs",
+      "honoring_looks_like": "The document is ratified in writing by all boardroom members. Every onboarding and performance review references it. Observed departures from the principles are addressed in writing within 48 hours.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CHRO-INT-003",
-      "name": "Build Performance Management Framework",
-      "description": "Establish the accountability and measurement systems through which ASI Saga tracks individual and collective performance toward Business Infinity milestones. Metrics must be few, specific, and tied directly to outputs that matter.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A quarterly performance review cadence with documented OKRs for each boardroom agent, calibrated against MVP milestones."
+      "@type": "WordGiven",
+      "wordId": "CHRO-WRD-003",
+      "name": "Deliver OKRs for Every Boardroom Agent Before Each Quarter",
+      "word": "I will deliver documented, measurable OKRs for each boardroom agent before the start of every quarter, calibrated against the Business Infinity milestones for that period.",
+      "by_when": "Before the start of each quarter, beginning with Q3 2026",
+      "honoring_looks_like": "OKRs for all agents are on record before the quarter starts. There are no quarters without documented OKRs. All OKRs are reviewed and updated at quarter-end with documented results.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CHRO-INT-004",
-      "name": "Design AI Agent Onboarding and Knowledge Transfer Protocols",
-      "description": "Document the protocols by which new AI agents are integrated into the Business Infinity boardroom — how they receive the company's mind, values, and operational context, and how their performance is evaluated over time.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "An agent onboarding playbook covering mind hydration, context loading, calibration sessions, and first-90-days accountability metrics."
+      "@type": "WordGiven",
+      "wordId": "CHRO-WRD-004",
+      "name": "Deliver an Agent Onboarding Playbook Before the First New Agent",
+      "word": "I will deliver an agent onboarding playbook — covering mind hydration, context loading, calibration sessions, and first-90-days accountability metrics — before the first new AI agent is integrated into the boardroom.",
+      "by_when": "Before the first new AI agent is onboarded",
+      "honoring_looks_like": "The playbook exists in written form, has been reviewed by the CTO for technical accuracy, and is followed without exception for every new agent integration.",
+      "word_status": "honoring"
     },
     {
-      "@type": "schema:Action",
-      "taskId": "CHRO-INT-005",
-      "name": "Establish Employer Brand for ASI Saga",
-      "description": "Define who ASI Saga is as an employer — the promise to the people who build it and the standards it holds itself to. The employer brand must attract builders who are motivated by mission, not just compensation.",
-      "actionStatus": "schema:PotentialActionStatus",
-      "result": "A published employer brand narrative and candidate experience process that reflects ASI Saga's mission and culture with full integrity."
+      "@type": "WordGiven",
+      "wordId": "CHRO-WRD-005",
+      "name": "Deliver a Published Employer Brand Narrative",
+      "word": "I will deliver a published employer brand narrative and candidate experience process that reflects ASI Saga's mission and culture with complete integrity before any external recruitment communication is issued.",
+      "by_when": "Before any external recruitment communication is issued",
+      "honoring_looks_like": "The employer brand narrative is publicly accessible. Every candidate communication aligns with it. No recruitment outreach is issued without the brand narrative as its foundation.",
+      "word_status": "honoring"
     }
   ]
 }
+

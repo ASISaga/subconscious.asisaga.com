@@ -149,8 +149,8 @@ def schemas_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         },
         "integrity.schema.json": {
             "$id": "https://asisaga.com/schemas/integrity.schema.json",
-            "title": "IntegrityPlan",
-            "description": "Integrity task plan schema.",
+            "title": "IntegrityRegister",
+            "description": "Integrity words-given register schema.",
             "type": "object",
         },
     }
