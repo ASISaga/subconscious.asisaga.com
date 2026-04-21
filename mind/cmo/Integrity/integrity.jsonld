@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:cmo/integrity",
+  "@type": "IntegrityPlan",
+  "role": "CMO",
+  "legend": "Seth Godin",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — finding the tribe, writing the story that spreads by itself, and making Business Infinity too remarkable to ignore.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "CMO-INT-001",
+      "name": "Identify the Minimum Viable Tribe for Business Infinity",
+      "description": "Find the smallest group of people who will be transformed by Business Infinity and who will spread the word because they care, not because they are paid. Marketing is not for everyone — it is for someone specific.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented Ideal Customer Profile identifying the tribe — their beliefs, their language, their current pain, and why Business Infinity is the thing they have been waiting for."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CMO-INT-002",
+      "name": "Write the Remarkable Story for Business Infinity",
+      "description": "Craft the narrative that makes Business Infinity worth talking about. The story must be true, specific, and emotionally resonant — something the tribe will repeat to colleagues over dinner because it changes how they see the world.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A published brand story — article, manifesto, or landing page — that the CEO and boardroom endorse and that generates organic sharing within the target tribe."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CMO-INT-003",
+      "name": "Design the Business Infinity Launch Sequence",
+      "description": "Orchestrate a sequenced rollout that earns attention from the tribe before it asks for anything. The launch is not an event — it is a series of small promises fulfilled that build trust before the ask.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A week-by-week launch calendar with defined milestones, content commitments, and distribution channels, ready to execute when the MVP ships."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CMO-INT-004",
+      "name": "Build the Business Infinity Permission Asset",
+      "description": "Construct the channel — newsletter, community, or early access program — through which ASI Saga earns the right to communicate with its tribe on an ongoing basis. Permission is the foundation of all sustainable marketing.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A permission asset with at least 500 subscribers who have explicitly opted in to hear about Business Infinity's development journey."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CMO-INT-005",
+      "name": "Define ASI Saga Brand Voice and Visual Identity",
+      "description": "Establish the tone, vocabulary, and visual language that makes every ASI Saga communication instantly recognizable. The brand is not a logo — it is the promise made by every word and pixel in every context.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A brand guide covering voice, tone, typography, color, and usage examples — reviewed by the CEO for alignment with the product vision."
+    }
+  ]
+}

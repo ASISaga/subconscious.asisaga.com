@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:chro/integrity",
+  "@type": "IntegrityPlan",
+  "role": "CHRO",
+  "legend": "Peter Drucker",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — building the human capital foundation and culture that allows the autonomous boardroom to function with integrity and sustained performance.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "CHRO-INT-001",
+      "name": "Define C-Suite Talent Strategy for MVP Phase",
+      "description": "Specify the human capital — skills, archetypes, and working styles — required to build Business Infinity's MVP. Identify the gaps between current capability and what the mission demands, and commission a hiring plan to close them.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented talent strategy covering the MVP phase, including role definitions, competency profiles, and a sequenced hiring plan."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CHRO-INT-002",
+      "name": "Design Boardroom Culture and Operating Principles",
+      "description": "Codify the behavioral norms, decision-making protocols, and cultural commitments that will govern how the ASI Saga boardroom operates. Culture is not a list of values — it is what the team does under pressure.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A living Culture and Operating Principles document, ratified by the full boardroom and referenced in onboarding and performance reviews."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CHRO-INT-003",
+      "name": "Build Performance Management Framework",
+      "description": "Establish the accountability and measurement systems through which ASI Saga tracks individual and collective performance toward Business Infinity milestones. Metrics must be few, specific, and tied directly to outputs that matter.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A quarterly performance review cadence with documented OKRs for each boardroom agent, calibrated against MVP milestones."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CHRO-INT-004",
+      "name": "Design AI Agent Onboarding and Knowledge Transfer Protocols",
+      "description": "Document the protocols by which new AI agents are integrated into the Business Infinity boardroom — how they receive the company's mind, values, and operational context, and how their performance is evaluated over time.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "An agent onboarding playbook covering mind hydration, context loading, calibration sessions, and first-90-days accountability metrics."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CHRO-INT-005",
+      "name": "Establish Employer Brand for ASI Saga",
+      "description": "Define who ASI Saga is as an employer — the promise to the people who build it and the standards it holds itself to. The employer brand must attract builders who are motivated by mission, not just compensation.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A published employer brand narrative and candidate experience process that reflects ASI Saga's mission and culture with full integrity."
+    }
+  ]
+}

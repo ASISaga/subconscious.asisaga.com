@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:founder/integrity",
+  "@type": "IntegrityPlan",
+  "role": "Founder",
+  "legend": "Paul Graham",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — making something people want, shipping it ruthlessly, staying alive long enough to learn, and doing it again until the company reaches escape velocity.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "FOUNDER-INT-001",
+      "name": "Define and Lock the Business Infinity MVP Scope",
+      "description": "Ruthlessly prioritize what ships in the first version of Business Infinity. Cut everything that is not essential to the core promise. The MVP is not a smaller version of the full product — it is the one thing that proves the core hypothesis.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A locked MVP scope document with a feature list, an explicit cut list, and a single testable hypothesis that the MVP will prove or disprove."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "FOUNDER-INT-002",
+      "name": "Establish Weekly Shipping Cadence for Business Infinity",
+      "description": "Build the discipline of shipping something real every week — not planning to ship, not getting ready to ship, but actually shipping. Velocity is the cure for most startup diseases.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented weekly shipping process with defined release criteria, a public or internal changelog, and a post-release learning review."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "FOUNDER-INT-003",
+      "name": "Build Direct User Feedback Loops",
+      "description": "Talk to users every week. Not surveys — conversations. The most valuable information about Business Infinity will come from the people who use it, not from the people who build it. Build the structures that make this feedback continuous.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented user interview cadence with at least five user conversations per week during the MVP phase and a synthesis process that feeds directly into product decisions."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "FOUNDER-INT-004",
+      "name": "Ensure ASI Saga Reaches Default-Alive Status",
+      "description": "Monitor and protect ASI Saga's path to sustainability. Default alive means: if growth stopped today, would the company survive? Build the roadmap to get there, and track progress monthly.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A monthly default-alive dashboard with documented milestones toward sustainability, presented at every boardroom meeting."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "FOUNDER-INT-005",
+      "name": "Identify and Eliminate the Biggest Risk to ASI Saga Survival",
+      "description": "At any given moment, there is one thing that could kill ASI Saga. Name it. Work on it every week until it is no longer the biggest risk. Then name the next one. This is the founder's primary job.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented risk register maintained weekly, with the top existential risk named explicitly and a current mitigation plan in active execution."
+    }
+  ]
+}

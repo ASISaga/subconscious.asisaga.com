@@ -55,6 +55,8 @@ SCHEMA_REGISTRY: dict[str, str] = {
     "action-plan": "action-plan.schema.json",
     "entity-context": "entity-context.schema.json",
     "entity-content": "entity-content.schema.json",
+    "responsibilities": "responsibilities.schema.json",
+    "integrity": "integrity.schema.json",
 }
 
 
@@ -161,9 +163,9 @@ def _schemas_dir() -> Path:
     override = os.environ.get("SCHEMAS_DIR")
     if override:
         return Path(override)
-    # subconscious/subconscious/schema_storage.py → up three levels to repo root
-    repo_root = Path(__file__).parent.parent.parent
-    return repo_root / "boardroom" / "mind" / "schemas"
+    # subconscious/subconscious/schema_storage.py → up two levels to repo root
+    repo_root = Path(__file__).parent.parent
+    return repo_root / "schemas"
 
 
 # ---------------------------------------------------------------------------

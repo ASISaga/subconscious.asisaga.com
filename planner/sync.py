@@ -1,25 +1,35 @@
-"""Microsoft Planner sync engine for CXO responsibilities.
+"""Microsoft Planner sync engine for CXO tasks and responsibilities.
 
-Translates :class:`~business_infinity.planner.responsibilities.RoleResponsibilities`
-data into Microsoft Planner plans, buckets, and tasks via the Microsoft Graph
-SDK, and monitors task completion progress.
+Provides two sync engines:
 
-Planner structure
------------------
+* :class:`TasksSync` — syncs integrity tasks from ``mind/{agent}/Integrity/``
+  into Microsoft Planner.  This is the primary sync path.
+
+* :class:`PlannerSync` — legacy sync of responsibilities from
+  ``mind/{agent}/Responsibilities/`` into Microsoft Planner (retained for
+  backward compatibility).
+
+Planner structure for tasks (TasksSync)
+----------------------------------------
 ::
 
-    Plan  ── "{ROLE} Responsibilities"   (one per CXO, owned by a Microsoft 365 group)
-    ├── Bucket  "Entrepreneur"
-    │   ├── Task  "{responsibility.title}"
-    │   └── ...
-    ├── Bucket  "Manager"
-    │   └── ...
-    └── Bucket  "Domain Expert"
+    Plan  ── "{ROLE} Integrity"   (one per CXO, owned by a Microsoft 365 group)
+    └── Bucket  "ASI Saga & Business Infinity"
+        ├── Task  "{task.name}"
         └── ...
 
+Planner structure for responsibilities (PlannerSync — legacy)
+--------------------------------------------------------------
+::
+
+    Plan  ── "{ROLE} Responsibilities"   (one per CXO)
+    ├── Bucket  "Entrepreneur"
+    ├── Bucket  "Manager"
+    └── Bucket  "Domain Expert"
+
 Each task carries:
-- **title** — ``responsibility.title``
-- **description** (via task details) — commitment + scope + accountability
+- **title** — ``task.name`` / ``responsibility.title``
+- **description** (via task details) — task description or commitment + scope + accountability
 - **percent_complete** — updated independently by the owning CXO
 
 Environment variables
@@ -38,28 +48,28 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
+from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 from msgraph.generated.models.planner_bucket import PlannerBucket
+from msgraph.generated.models.planner_container_type import PlannerContainerType
 from msgraph.generated.models.planner_plan import PlannerPlan
 from msgraph.generated.models.planner_plan_container import PlannerPlanContainer
-from msgraph.generated.models.planner_container_type import PlannerContainerType
 from msgraph.generated.models.planner_task import PlannerTask
 from msgraph.generated.models.planner_task_details import PlannerTaskDetails
-from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 
-from business_infinity.planner.client import PlannerClient
-from business_infinity.planner.responsibilities import (
+from planner.client import PlannerClient
+from planner.responsibilities import (
     ResponsibilitiesLoader,
     RoleResponsibilities,
 )
+from planner.tasks import IntegrityPlan, TasksLoader
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["PlannerMonitor", "PlannerSync", "SyncResult", "TaskStatus"]
+__all__ = ["PlannerMonitor", "PlannerSync", "SyncResult", "TaskStatus", "TasksSync"]
 
 # Human-readable bucket names per dimension slug.
-_BUCKET_NAMES: Dict[str, str] = {
+_BUCKET_NAMES: dict[str, str] = {
     "entrepreneur": "Entrepreneur",
     "manager": "Manager",
     "domain-expert": "Domain Expert",
@@ -122,7 +132,7 @@ class SyncResult:
     buckets_synced: int = 0
     tasks_created: int = 0
     tasks_skipped: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 # ── PlannerSync ───────────────────────────────────────────────────────────────
@@ -143,14 +153,14 @@ class PlannerSync:
     def __init__(
         self,
         planner_client: PlannerClient,
-        loader: Optional[ResponsibilitiesLoader] = None,
+        loader: ResponsibilitiesLoader | None = None,
     ) -> None:
         self._client = planner_client.graph
         self._loader = loader or ResponsibilitiesLoader()
 
     # ── Public API ───────────────────────────────────────────────────────────
 
-    async def sync_agent(self, agent_id: str, group_id: Optional[str] = None) -> SyncResult:
+    async def sync_agent(self, agent_id: str, group_id: str | None = None) -> SyncResult:
         """Sync all responsibility dimensions for *agent_id* to Planner.
 
         Creates one plan per CXO (if not already present), then creates
@@ -206,7 +216,7 @@ class PlannerSync:
         self,
         agent_id: str,
         dimension_slug: str,
-        group_id: Optional[str] = None,
+        group_id: str | None = None,
     ) -> SyncResult:
         """Sync a single dimension for *agent_id* to Planner.
 
@@ -249,14 +259,7 @@ class PlannerSync:
     @staticmethod
     def _resolve_group_id(role: str) -> str:
         """Resolve the Microsoft 365 group ID for *role* from env vars."""
-        role_key = f"PLANNER_GROUP_ID_{role.upper()}"
-        group_id = os.environ.get(role_key) or os.environ.get("PLANNER_GROUP_ID")
-        if not group_id:
-            raise EnvironmentError(
-                f"Microsoft 365 group ID not configured. "
-                f"Set {role_key} or PLANNER_GROUP_ID environment variable."
-            )
-        return group_id
+        return _resolve_group_id(role)
 
     async def _get_or_create_plan(self, title: str, group_id: str) -> str:
         """Return the plan ID for *title* in *group_id*, creating if absent."""
@@ -298,7 +301,7 @@ class PlannerSync:
         logger.info("Created new bucket: %s (%s)", bucket_name, created.id)
         return created.id
 
-    async def _get_existing_task_titles(self, plan_id: str) -> Dict[str, str]:
+    async def _get_existing_task_titles(self, plan_id: str) -> dict[str, str]:
         """Return a mapping of task title → task ID for all tasks in *plan_id*."""
         tasks_response = await (
             self._client.planner.plans.by_planner_plan_id(plan_id).tasks.get()
@@ -394,7 +397,7 @@ class PlannerMonitor:
     def __init__(self, planner_client: PlannerClient) -> None:
         self._client = planner_client.graph
 
-    async def get_plan_status(self, plan_id: str) -> List[TaskStatus]:
+    async def get_plan_status(self, plan_id: str) -> list[TaskStatus]:
         """Return completion status of all tasks in *plan_id*.
 
         Parameters
@@ -417,11 +420,11 @@ class PlannerMonitor:
         buckets_response = await (
             self._client.planner.plans.by_planner_plan_id(plan_id).buckets.get()
         )
-        bucket_id_to_name: Dict[str, str] = {}
+        bucket_id_to_name: dict[str, str] = {}
         if buckets_response and buckets_response.value:
             bucket_id_to_name = {b.id: b.name for b in buckets_response.value}
 
-        statuses: List[TaskStatus] = []
+        statuses: list[TaskStatus] = []
         for task in tasks_response.value:
             if not task.title:
                 continue
@@ -439,7 +442,7 @@ class PlannerMonitor:
     async def get_agent_status(
         self,
         role: str,
-    ) -> Optional[List[TaskStatus]]:
+    ) -> list[TaskStatus] | None:
         """Return completion status for the plan titled "{role} Responsibilities".
 
         Parameters
@@ -464,7 +467,7 @@ class PlannerMonitor:
         return None
 
     @staticmethod
-    def summarise(statuses: List[TaskStatus]) -> Dict[str, object]:
+    def summarise(statuses: list[TaskStatus]) -> dict[str, object]:
         """Return an aggregate completion summary for *statuses*.
 
         Returns
@@ -489,7 +492,7 @@ class PlannerMonitor:
         not_started = sum(1 for s in statuses if s.percent_complete == 0)
         overall_percent = round(sum(s.percent_complete for s in statuses) / total)
 
-        by_dimension: Dict[str, Dict[str, object]] = {}
+        by_dimension: dict[str, dict[str, object]] = {}
         for status in statuses:
             dim = status.dimension or "Unknown"
             if dim not in by_dimension:
@@ -512,3 +515,234 @@ class PlannerMonitor:
             "overall_percent": overall_percent,
             "by_dimension": by_dimension,
         }
+
+
+# ── TasksSync ─────────────────────────────────────────────────────────────────
+
+
+class TasksSync:
+    """Syncs CXO integrity tasks from JSON-LD files into Microsoft Planner.
+
+    Reads ``mind/{agent_id}/Integrity/integrity.jsonld`` and creates one
+    Planner plan per CXO with a single ``"ASI Saga & Business Infinity"``
+    bucket containing one task per integrity task.
+
+    Parameters
+    ----------
+    planner_client:
+        Authenticated :class:`~planner.client.PlannerClient`.
+    loader:
+        :class:`~planner.tasks.TasksLoader` instance.  A default instance is
+        created when *None*.
+    """
+
+    _BUCKET_NAME = "ASI Saga & Business Infinity"
+
+    def __init__(
+        self,
+        planner_client: PlannerClient,
+        loader: TasksLoader | None = None,
+    ) -> None:
+        self._client = planner_client.graph
+        self._loader = loader or TasksLoader()
+
+    # ── Public API ───────────────────────────────────────────────────────────
+
+    async def sync_agent(self, agent_id: str, group_id: str | None = None) -> SyncResult:
+        """Sync all integrity tasks for *agent_id* to Planner.
+
+        Creates one plan per CXO (if not already present) and one task per
+        integrity task inside the ``"ASI Saga & Business Infinity"`` bucket.
+        Existing tasks (matched by title) are skipped to avoid duplicates.
+
+        Parameters
+        ----------
+        agent_id:
+            Short agent identifier, e.g. ``"ceo"``.
+        group_id:
+            Microsoft 365 group ID that will own the plan.  When *None*,
+            resolved from the ``PLANNER_GROUP_ID_{ROLE}`` or
+            ``PLANNER_GROUP_ID`` environment variables.
+
+        Returns
+        -------
+        SyncResult
+            Summary of created buckets and tasks.
+        """
+        plan_data = self._loader.load_agent(agent_id)
+        if plan_data is None:
+            raise ValueError(f"No integrity file found for agent: {agent_id!r}")
+
+        resolved_group_id = group_id or _resolve_group_id(plan_data.role)
+        plan_title = f"{plan_data.role} Integrity"
+        plan_id = await self._get_or_create_plan(plan_title, resolved_group_id)
+
+        result = SyncResult(
+            agent_id=agent_id,
+            role=plan_data.role,
+            plan_id=plan_id,
+            plan_title=plan_title,
+        )
+        await self._sync_tasks(plan_data, plan_id, result)
+
+        logger.info(
+            "TasksSync complete for %s: plan=%s tasks_created=%d skipped=%d errors=%d",
+            agent_id,
+            plan_id,
+            result.tasks_created,
+            result.tasks_skipped,
+            len(result.errors),
+        )
+        return result
+
+    async def sync_all(self, group_id: str | None = None) -> list[SyncResult]:
+        """Sync integrity tasks for all available agents.
+
+        Parameters
+        ----------
+        group_id:
+            Optional Microsoft 365 group ID override applied to all plans.
+
+        Returns
+        -------
+        list[SyncResult]
+            One result per agent that has an ``Integrity/integrity.jsonld`` file.
+        """
+        results: list[SyncResult] = []
+        for agent_id in self._loader.available_agents():
+            results.append(await self.sync_agent(agent_id, group_id=group_id))
+        return results
+
+    # ── Private helpers ──────────────────────────────────────────────────────
+
+    async def _get_or_create_plan(self, title: str, group_id: str) -> str:
+        """Return the plan ID for *title* in *group_id*, creating if absent."""
+        plans_response = await self._client.planner.plans.get()
+        if plans_response and plans_response.value:
+            for plan in plans_response.value:
+                if plan.title == title:
+                    logger.debug("Found existing plan: %s (%s)", title, plan.id)
+                    return plan.id
+
+        new_plan = PlannerPlan()
+        new_plan.title = title
+        container = PlannerPlanContainer()
+        container.container_id = group_id
+        container.type = PlannerContainerType.Group
+        new_plan.container = container
+
+        created = await self._client.planner.plans.post(new_plan)
+        logger.info("Created new Planner plan: %s (%s)", title, created.id)
+        return created.id
+
+    async def _get_or_create_bucket(self, plan_id: str) -> str:
+        """Return bucket ID for the integrity bucket in *plan_id*, creating if absent."""
+        buckets_response = await (
+            self._client.planner.plans.by_planner_plan_id(plan_id).buckets.get()
+        )
+        if buckets_response and buckets_response.value:
+            for bucket in buckets_response.value:
+                if bucket.name == self._BUCKET_NAME:
+                    logger.debug("Found existing bucket: %s (%s)", self._BUCKET_NAME, bucket.id)
+                    return bucket.id
+
+        new_bucket = PlannerBucket()
+        new_bucket.name = self._BUCKET_NAME
+        new_bucket.plan_id = plan_id
+        new_bucket.order_hint = " !"
+
+        created = await self._client.planner.buckets.post(new_bucket)
+        logger.info("Created new bucket: %s (%s)", self._BUCKET_NAME, created.id)
+        return created.id
+
+    async def _get_existing_task_titles(self, plan_id: str) -> dict[str, str]:
+        """Return a mapping of task title → task ID for all tasks in *plan_id*."""
+        tasks_response = await (
+            self._client.planner.plans.by_planner_plan_id(plan_id).tasks.get()
+        )
+        if not tasks_response or not tasks_response.value:
+            return {}
+        return {task.title: task.id for task in tasks_response.value if task.title}
+
+    async def _create_task(
+        self,
+        plan_id: str,
+        bucket_id: str,
+        title: str,
+        description: str,
+        task_id: str,
+        result_text: str,
+    ) -> str:
+        """Create a Planner task and attach its description via task details."""
+        new_task = PlannerTask()
+        new_task.plan_id = plan_id
+        new_task.bucket_id = bucket_id
+        new_task.title = title
+        new_task.percent_complete = 0
+
+        created_task = await self._client.planner.tasks.post(new_task)
+        planner_id = created_task.id
+
+        details = PlannerTaskDetails()
+        detail_lines = [f"TASK ID\n{task_id}", f"DESCRIPTION\n{description}"]
+        if result_text:
+            detail_lines.append(f"RESULT\n{result_text}")
+        details.description = "\n\n".join(detail_lines)
+
+        await self._client.planner.tasks.by_planner_task_id(planner_id).details.get()
+        await (
+            self._client.planner.tasks
+            .by_planner_task_id(planner_id)
+            .details
+            .patch(details)
+        )
+
+        logger.debug("Created task: %s (%s)", title, planner_id)
+        return planner_id
+
+    async def _sync_tasks(
+        self,
+        plan_data: IntegrityPlan,
+        plan_id: str,
+        result: SyncResult,
+    ) -> None:
+        """Sync all tasks in *plan_data* into the integrity Planner bucket."""
+        bucket_id = await self._get_or_create_bucket(plan_id)
+        result.buckets_synced += 1
+
+        existing_titles = await self._get_existing_task_titles(plan_id)
+
+        for task in plan_data.tasks:
+            if task.name in existing_titles:
+                logger.debug("Skipping existing task: %s", task.name)
+                result.tasks_skipped += 1
+                continue
+            try:
+                await self._create_task(
+                    plan_id=plan_id,
+                    bucket_id=bucket_id,
+                    title=task.name,
+                    description=task.description,
+                    task_id=task.task_id,
+                    result_text=task.result,
+                )
+                result.tasks_created += 1
+            except (ODataError, ValueError, RuntimeError) as exc:
+                msg = f"Failed to create task {task.name!r}: {exc}"
+                logger.error(msg)
+                result.errors.append(msg)
+
+
+# ── Shared helpers ────────────────────────────────────────────────────────────
+
+
+def _resolve_group_id(role: str) -> str:
+    """Resolve the Microsoft 365 group ID for *role* from env vars."""
+    role_key = f"PLANNER_GROUP_ID_{role.upper()}"
+    group_id = os.environ.get(role_key) or os.environ.get("PLANNER_GROUP_ID")
+    if not group_id:
+        raise OSError(
+            f"Microsoft 365 group ID not configured. "
+            f"Set {role_key} or PLANNER_GROUP_ID environment variable."
+        )
+    return group_id

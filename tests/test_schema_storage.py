@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
-import pytest
-
 from subconscious import schema_storage
 
 
@@ -16,6 +12,7 @@ class TestSchemaRegistry:
         expected = {
             "manas", "buddhi", "ahankara", "chitta",
             "action-plan", "entity-context", "entity-content",
+            "responsibilities", "integrity",
         }
         assert expected == set(schema_storage.SCHEMA_REGISTRY.keys())
 
@@ -29,7 +26,7 @@ class TestListSchemas:
 
     def test_list_returns_all_registered(self, schemas_dir):
         result = schema_storage.list_schemas()
-        assert len(result) == 7
+        assert len(result) == 9
 
     def test_all_available_when_files_present(self, schemas_dir):
         result = schema_storage.list_schemas()

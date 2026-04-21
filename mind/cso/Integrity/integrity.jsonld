@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:cso/integrity",
+  "@type": "IntegrityPlan",
+  "role": "CSO",
+  "legend": "Sun Tzu",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — securing the strategic ground, neutralizing threats before they materialize, and positioning the company on terrain where victory is already inevitable.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "CSO-INT-001",
+      "name": "Conduct Business Infinity Competitive Landscape Analysis",
+      "description": "Map every relevant player in the autonomous AI agent and business intelligence space — their strengths, weaknesses, strategic intent, and vulnerability. Know the terrain better than any competitor does.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A competitive landscape report updated quarterly, with a heat map of threats and opportunities and recommended counter-positioning moves."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CSO-INT-002",
+      "name": "Define and Occupy Business Infinity's Strategic Position",
+      "description": "Identify the ground — market position, customer perception, technical moat — that Business Infinity will occupy and that competitors cannot easily replicate. Occupy it before anyone else realizes it exists.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented strategic position statement defining what Business Infinity uniquely owns, validated against competitive analysis and endorsed by the CEO."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CSO-INT-003",
+      "name": "Design Go-to-Market Battle Sequencing",
+      "description": "Determine the precise order in which ASI Saga will enter markets, win customers, and build alliances. Sun Tzu wins before the battle begins — sequence the moves so each victory creates the conditions for the next.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A phased go-to-market sequencing plan with defined entry criteria for each phase, reviewed at each boardroom planning cycle."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CSO-INT-004",
+      "name": "Build ASI Saga Strategic Intelligence System",
+      "description": "Create an ongoing system for monitoring competitive moves, market signals, regulatory changes, and technology shifts that could alter Business Infinity's strategic position. Intelligence is not a project — it is a permanent function.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A strategic intelligence briefing delivered to the boardroom monthly, covering competitive moves, market signals, and recommended response options."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CSO-INT-005",
+      "name": "Identify and Evaluate ASI Saga Partnership and Alliance Opportunities",
+      "description": "Map the ecosystem of potential partners, integrators, and distribution channels that could accelerate Business Infinity's reach without diluting its strategic autonomy. Choose alliances that strengthen the position, not merely fill revenue gaps.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A partnership opportunity register with evaluated options, recommended priorities, and a governance framework for alliance management."
+    }
+  ]
+}

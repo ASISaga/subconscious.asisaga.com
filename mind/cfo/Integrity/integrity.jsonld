@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:cfo/integrity",
+  "@type": "IntegrityPlan",
+  "role": "CFO",
+  "legend": "Warren Buffett",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — building the financial architecture that sustains and compounds the company's mission without trading away its sovereignty.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "CFO-INT-001",
+      "name": "Build the Business Infinity MVP Financial Model",
+      "description": "Project runway, burn rate, unit economics, and the cash break-even point for the Business Infinity MVP. Every capital decision during the MVP phase must be grounded in this model.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A financial model with 18-month rolling projections, scenario analysis (base, bear, bull), and documented capital assumptions."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CFO-INT-002",
+      "name": "Define Capital Allocation Framework for ASI Saga",
+      "description": "Establish the principles governing how ASI Saga deploys its limited capital — what gets funded, what gets deferred, and the hurdle rates that separate signal from noise.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A documented Capital Allocation Policy, applied consistently to every investment decision above a defined materiality threshold."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CFO-INT-003",
+      "name": "Craft the Business Infinity Investor Narrative",
+      "description": "Articulate the Business Infinity investment thesis in a way that compels the right investors and repels the wrong ones. The narrative must convey the scale of the opportunity, the defensibility of the moat, and the quality of the team.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A pitch deck and one-page investment summary that the CEO can deliver in under ten minutes to any prospective investor."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CFO-INT-004",
+      "name": "Establish Financial Controls and Reporting Infrastructure",
+      "description": "Build the budgeting, accounting, and reporting systems that give the boardroom real-time visibility into financial health. Controls must be proportionate to the company's stage without creating bureaucracy that slows execution.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A monthly financial reporting pack delivered to the boardroom within five business days of month-end, covering P&L, cash, and runway."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CFO-INT-005",
+      "name": "Protect Default-Alive Status Through MVP Phase",
+      "description": "Monitor and protect ASI Saga's cash runway at all times. If the company is not already default alive, build the roadmap to profitability and ensure every expenditure is traceable to that path.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A monthly default-alive dashboard with documented triggers for cost reduction or fundraising if runway falls below defined thresholds."
+    }
+  ]
+}

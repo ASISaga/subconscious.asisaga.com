@@ -141,6 +141,18 @@ def schemas_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             "description": "Entity content schema.",
             "type": "object",
         },
+        "responsibilities.schema.json": {
+            "$id": "https://asisaga.com/schemas/responsibilities.schema.json",
+            "title": "RoleResponsibilities",
+            "description": "Role responsibilities schema.",
+            "type": "object",
+        },
+        "integrity.schema.json": {
+            "$id": "https://asisaga.com/schemas/integrity.schema.json",
+            "title": "IntegrityPlan",
+            "description": "Integrity task plan schema.",
+            "type": "object",
+        },
     }
     import json
 

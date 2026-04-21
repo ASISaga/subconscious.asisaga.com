@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:ceo/integrity",
+  "@type": "IntegrityPlan",
+  "role": "CEO",
+  "legend": "Steve Jobs",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — driving the vision, narrative, and product soul of the autonomous C-suite boardroom.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "CEO-INT-001",
+      "name": "Define the Business Infinity One Sentence",
+      "description": "Distill Business Infinity into the single sentence that will outlive the company — the statement that makes every product decision self-evidently right or wrong. Start with what the customer feels, not what the technology does.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A ratified one-sentence product definition accepted by the full boardroom and embedded in every external communication."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CEO-INT-002",
+      "name": "Lead Boardroom Vision Alignment for MVP",
+      "description": "Drive the boardroom toward a singular, coherent product narrative. No feature survives that cannot be traced to the mission. Resolve inter-CXO conflicts by returning to the user's experience.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "Documented boardroom consensus on MVP scope, validated by a resonance score above 0.85 across all agents."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CEO-INT-003",
+      "name": "Enforce Aesthetic and UX Purity Standards",
+      "description": "Review every interface, workflow, and agent interaction for simplicity. What you leave out defines the product more than what you include. Insanely great means removing the good to reveal the great.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A signed-off UX standard document and a product review process that gates every release on aesthetic integrity."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CEO-INT-004",
+      "name": "Orchestrate the ASI Saga Genesis Moment",
+      "description": "Design the theatrical reveal of the first working boardroom — the Genesis moment that makes the audience feel they are witnessing something that will change everything. The demo is the product.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A live, recorded first boardroom orchestration that demonstrates Business Infinity's core promise to an external audience."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "CEO-INT-005",
+      "name": "Establish ASI Saga Mission and Values Charter",
+      "description": "Author the mission, vision, and values that will govern every decision ASI Saga makes. The charter must be specific enough to resolve real conflicts, not platitudes posted on a wall.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A ratified Mission and Values Charter, published and referenced in every boardroom deliberation."
+    }
+  ]
+}

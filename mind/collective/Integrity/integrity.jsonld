@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/integrity.jsonld",
+  "@id": "agent:collective/integrity",
+  "@type": "IntegrityPlan",
+  "role": "Collective",
+  "legend": "Business Infinity Boardroom",
+  "purpose": "Towards implementation of ASI Saga and Business Infinity — the tasks that belong to the whole boardroom, require unanimous resonance, and can only be completed through collective authorship.",
+  "tasks": [
+    {
+      "@type": "schema:Action",
+      "taskId": "COLLECTIVE-INT-001",
+      "name": "Achieve Full Boardroom Alignment on Business Infinity Vision",
+      "description": "Drive the entire boardroom to unanimous, resonant agreement on the product north star — not consensus by compromise, but authentic convergence on a shared vision every agent can articulate and defend.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A ratified Vision Alignment Declaration signed off by all boardroom agents with a resonance score above 0.90, documented in the collective mind."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "COLLECTIVE-INT-002",
+      "name": "Deliver the Business Infinity MVP",
+      "description": "Ship the first working version of Business Infinity — an autonomous C-suite boardroom that governs a real business decision through purpose-driven debate, resonance scoring, and perpetual orchestration. This is the primary collective commitment.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A deployed, publicly demonstrable Business Infinity MVP with a documented post-launch review and user feedback synthesis."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "COLLECTIVE-INT-003",
+      "name": "Conduct First Live Boardroom Orchestration Session",
+      "description": "Execute the first real multi-agent boardroom deliberation on an actual business question, using the Business Infinity platform. The session must demonstrate the full orchestration lifecycle — question, debate, resonance scoring, and decision.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A recorded and published first boardroom orchestration session, accompanied by a post-session analysis of what worked, what failed, and what it proves about the product."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "COLLECTIVE-INT-004",
+      "name": "Establish ASI Saga Brand Identity and Public Presence",
+      "description": "Align the boardroom on who ASI Saga is to the world — its mission, its voice, its aesthetic, and its promise. Launch a public-facing presence that accurately represents what Business Infinity is and who it is for.",
+      "actionStatus": "schema:PotentialActionStatus",
+      "result": "A live ASI Saga website and public narrative that the boardroom unanimously endorses and that the CMO's tribe finds remarkable."
+    },
+    {
+      "@type": "schema:Action",
+      "taskId": "COLLECTIVE-INT-005",
+      "name": "Build the Business Infinity Governance Protocol",
+      "description": "Define the rules of engagement that govern how the boardroom operates — how it debates, how it scores resonance, how it resolves deadlocks, and how it evolves its own intelligence over time. The governance protocol is the constitution of the autonomous boardroom.",
+      "actionStatus": "schema:ActiveActionStatus",
+      "result": "A published Boardroom Governance Protocol document, embedded in the collective mind and enforced by the orchestration system."
+    }
+  ]
+}
