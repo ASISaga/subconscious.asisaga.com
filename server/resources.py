@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from server import _conversation_to_jsonld, _orchestration_to_jsonld, mcp
+from server.tools import _resolve_dimension
 from storage import conversations as storage_conv
 from storage import schemas as schema_storage
 
@@ -46,4 +47,40 @@ def schema_context_resource(schema_name: str, context_id: str) -> str:
     result = schema_storage.get_schema_context(schema_name, context_id)
     if result is None:
         return json.dumps({"error": f"Schema context '{schema_name}/{context_id}' not found"})
+    return json.dumps(result)
+
+
+@mcp.resource("mind://{agent_id}/{dimension}")
+def agent_mind_resource(agent_id: str, dimension: str) -> str:
+    """Return an atomic mind-state document for a CXO agent by unique ID and dimension.
+
+    This resource provides direct URI-addressable access to any mind-state file
+    owned by an agent.  The ``dimension`` path mirrors the directory layout in
+    the ``mind/`` repository directory:
+
+    * ``mind://ceo/manas`` — CEO's working memory state
+    * ``mind://cfo/buddhi`` — CFO's intellect document
+    * ``mind://cto/chitta`` — CTO's pure intelligence document
+    * ``mind://coo/responsibilities/manager`` — COO's manager responsibilities
+    * ``mind://cmo/manas/content/company`` — CMO's mutable company perspective
+
+    For interactive read/write operations use the dedicated semantic MCP tools:
+    ``get_chitta``, ``get_ahankara``, ``get_buddhi``, ``get_manas``,
+    ``get_action_plan``, ``get_integrity``, ``get_responsibilities``,
+    ``get_entity_content``, ``get_entity_context`` (and the corresponding
+    ``set_*`` variants).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``).
+        dimension: Dimension path (e.g. ``"manas"``, ``"responsibilities/entrepreneur"``).
+    """
+    try:
+        schema_name, context_id = _resolve_dimension(agent_id, dimension)
+    except ValueError as exc:
+        return json.dumps({"error": str(exc)})
+    result = schema_storage.get_schema_context(schema_name, context_id)
+    if result is None:
+        return json.dumps({
+            "error": f"No state found for agent '{agent_id}' dimension '{dimension}'"
+        })
     return json.dumps(result)

@@ -173,6 +173,68 @@ The `collective/` subdirectory holds the shared boardroom consciousness — stat
 
 ---
 
+## Multi-Company / Multi-Product Provision
+
+The current mind directory contains data for a single company (**ASI Saga**) and
+its primary product (**Business Infinity**).  The following conventions are reserved
+for future scaling to multiple companies or products — no data migration is required
+until a second tenant is onboarded.
+
+### Intended future directory layout
+
+```
+mind/
+└── {company_id}/              ← company scope (e.g. "asisaga", "techcorp")
+    ├── {agent_id}/            ← per-CXO mind layers (unchanged structure)
+    │   ├── Manas/
+    │   ├── Buddhi/
+    │   ├── Ahankara/
+    │   ├── Chitta/
+    │   ├── Integrity/
+    │   └── Responsibilities/
+    └── collective/            ← shared boardroom mind for this company
+        ├── company.jsonld
+        ├── {product_id}.jsonld
+        └── ...
+```
+
+### MCP provision
+
+All MCP tools that read/write schema contexts accept an optional **`company_id`**
+parameter:
+
+* `get_chitta(agent_id, company_id=None)` / `set_chitta(agent_id, data, company_id=None)`
+* `get_ahankara(agent_id, company_id=None)` / `set_ahankara(agent_id, data, company_id=None)`
+* `get_buddhi(agent_id, company_id=None)` / `set_buddhi(agent_id, data, company_id=None)`
+* `get_action_plan(agent_id, company_id=None)` / `set_action_plan(agent_id, data, company_id=None)`
+* `get_manas(agent_id, company_id=None)` / `set_manas(agent_id, data, company_id=None)`
+* `get_integrity(agent_id, company_id=None)` / `set_integrity(agent_id, data, company_id=None)`
+* `get_responsibilities(agent_id, role, company_id=None)` / `set_responsibilities(agent_id, role, data, company_id=None)`
+* `get_entity_content(agent_id, entity, company_id=None)` / `set_entity_content(agent_id, entity, data, company_id=None)`
+* `get_entity_context(agent_id, entity, company_id=None)` / `set_entity_context(agent_id, entity, data, company_id=None)`
+* `store_schema_context(schema_name, context_id, data, company_id=None)`
+* `get_schema_context(schema_name, context_id, company_id=None)`
+* `list_schema_contexts(schema_name, company_id=None)`
+* `initialize_schema_contexts(force, company_id=None)`
+
+When `company_id` is provided the storage row is scoped as
+`{company_id}/{context_id}` in the Azure Table RowKey and annotated with a
+`CompanyId` attribute, isolating it from rows belonging to other companies.
+
+The mind resource URI also supports the dimension path directly:
+
+```
+mind://{agent_id}/{dimension}   e.g. mind://ceo/manas  or  mind://cfo/chitta
+```
+
+### Azure Table provision
+
+The **SchemaContexts** Azure Table includes a `CompanyId` attribute on every
+row written with a `company_id` scope.  Rows written without a scope (current
+default) coexist in the same table and remain backward-compatible.
+
+---
+
 ## Initial Purpose
 
 The initial purpose of **ASI Saga** is the development of the MVP of **Business Infinity** — an autonomous C-suite boardroom that governs business decisions through purpose-driven debate, resonance scoring, and perpetual orchestration. Every action-plan in every agent's Buddhi is anchored to this purpose.
