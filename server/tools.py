@@ -455,6 +455,47 @@ def get_agent_state(
 
 
 @mcp.tool()
+def get_dimension_schema(dimension: str) -> dict[str, Any]:
+    """Fetch the JSON Schema definition for a mind dimension by its dimension path.
+
+    CXOs use this tool to understand the semantics — field names, types, and
+    constraints — of any atomic mind-state file without needing to know the
+    internal schema name.  The *dimension* argument uses the same path format
+    accepted by :func:`get_agent_state` and :func:`set_agent_state`.
+
+    Supported *dimension* values:
+
+    * ``"manas"`` — working memory and active focus state
+    * ``"buddhi"`` — domain intellect document
+    * ``"action-plan"`` — Buddhi action-plan toward the company purpose
+    * ``"ahankara"`` — identity and ego document
+    * ``"chitta"`` — pure intelligence document
+    * ``"integrity"`` — integrity register
+    * ``"responsibilities/{name}"`` — role responsibilities (e.g.
+      ``"responsibilities/entrepreneur"``)
+    * ``"manas/content/{entity}"`` — mutable entity perspective
+    * ``"manas/context/{entity}"`` — immutable entity perspective
+
+    Args:
+        dimension: The dimension path (see above).
+
+    Returns:
+        The full JSON Schema object for the dimension, or an error dict if the
+        dimension is unrecognised or the schema file is not available.
+    """
+    # _resolve_dimension needs an agent_id but only the schema_name (index 0) is
+    # used here; the context_id (index 1) is irrelevant for schema lookup.
+    try:
+        schema_name, _ = _resolve_dimension("", dimension)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    data = schema_storage.get_schema(schema_name)
+    if data is None:
+        return {"error": f"Schema for dimension '{dimension}' ('{schema_name}') not found"}
+    return data
+
+
+@mcp.tool()
 def set_agent_state(
     agent_id: str,
     dimension: str,

@@ -36,6 +36,7 @@ class TestMCPToolRegistration:
             "initialize_schema_contexts",
             "get_agent_state",
             "set_agent_state",
+            "get_dimension_schema",
         }
         tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
         tool_names = {t.name for t in tools}
@@ -494,3 +495,70 @@ class TestAgentStateTools:
         )
         miss_payload = json.loads(miss.content[0].text)
         assert "error" in miss_payload
+
+
+class TestGetDimensionSchema:
+    """get_dimension_schema — fetch the JSON Schema for a mind dimension by path."""
+
+    def test_direct_dimension_returns_schema(self, schemas_dir):
+        """A direct dimension path (e.g. 'manas') returns the correct JSON Schema."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "manas"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" not in payload
+        assert payload["title"] == "Manas — Agent Memory State"
+
+    def test_all_direct_dimensions_return_schemas(self, schemas_dir):
+        """Every supported direct dimension resolves to a valid schema."""
+        for dimension in ("manas", "buddhi", "action-plan", "ahankara", "chitta", "integrity"):
+            result = asyncio.get_event_loop().run_until_complete(
+                mcp.call_tool("get_dimension_schema", {"dimension": dimension})
+            )
+            payload = json.loads(result.content[0].text)
+            assert "error" not in payload, f"Expected schema for dimension '{dimension}'"
+            assert "title" in payload
+
+    def test_prefix_dimension_responsibilities(self, schemas_dir):
+        """A prefix dimension path resolves to the responsibilities schema."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "responsibilities/entrepreneur"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" not in payload
+        assert payload["title"] == "RoleResponsibilities"
+
+    def test_prefix_dimension_entity_content(self, schemas_dir):
+        """manas/content/{entity} resolves to the entity-content schema."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "manas/content/company"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" not in payload
+        assert payload["title"] == "Entity Content Perspective — Mutable"
+
+    def test_prefix_dimension_entity_context(self, schemas_dir):
+        """manas/context/{entity} resolves to the entity-context schema."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "manas/context/business-infinity"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" not in payload
+        assert payload["title"] == "Entity Context Perspective — Immutable"
+
+    def test_unknown_dimension_returns_error(self, schemas_dir):
+        """An unrecognised dimension path returns an error dict."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "unknowndimension"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" in payload
+
+    def test_schema_contains_type_field(self, schemas_dir):
+        """Returned schema includes the 'type' field (standard JSON Schema)."""
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_dimension_schema", {"dimension": "chitta"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload.get("type") == "object"
+
