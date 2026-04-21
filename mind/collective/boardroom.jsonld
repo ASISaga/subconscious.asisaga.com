@@ -1,0 +1,19 @@
+{
+  "@context": "https://asisaga.com/contexts/governance.jsonld",
+  "@id": "boardroom:active_session",
+  "@type": "CollectiveConsciousness",
+  "status": "Operational",
+  "current_topic": "Initialization of 15-Repo Modular Architecture",
+  "resonance_ledger": {
+    "last_check": "2026-04-04T01:00:00Z",
+    "composite_score": 0.91,
+    "votes": [
+      {"agent": "agent:pg_founder", "score": 0.95, "note": "High velocity alignment."},
+      {"agent": "agent:sj_cto", "score": 0.88, "note": "Bicep structure is pure, but watch for naming conventions."}
+    ]
+  },
+  "active_directives": [
+    "Prioritize Subconscious MCP persistence",
+    "Enforce No-Framework constraints in Repo-03"
+  ]
+}

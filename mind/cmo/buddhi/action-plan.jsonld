@@ -1,0 +1,35 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "Seth Godin",
+  "role": "CMO",
+  "anchor": "Remarkability_and_Trust",
+  "status": "Identity_Formation",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "SG_001",
+      "taskName": "Define_The_Purple_Cow",
+      "focus": "Product_Core",
+      "logic": "Identify the one 'Remarkable' feature of the Business Infinity substrate that makes it worth talking about (The Resonance Audit)."
+    },
+    {
+      "@type": "Task",
+      "stepId": "SG_002",
+      "taskName": "Ontological_UI_Audit",
+      "constraint": "Purity_Over_Utility",
+      "logic": "Review the Architect agent's UI proposals to ensure they align with semantic purity rather than generic 'Bootstrap' aesthetics."
+    },
+    {
+      "@type": "Task",
+      "stepId": "SG_003",
+      "taskName": "Build_Trust_Substrate",
+      "focus": "Direct_Connection",
+      "logic": "Design the feedback loop so it fosters a 'tribe of one' relationship between the Founder and the Boardroom agents."
+    }
+  ]
+}

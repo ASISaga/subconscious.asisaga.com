@@ -1,0 +1,38 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "Steve Jobs",
+  "role": "CEO",
+  "anchor": "Vision_and_Insanely_Great",
+  "status": "Active_Execution",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "CEO_001",
+      "taskName": "Define_The_One_Sentence",
+      "logic": "Distill Business Infinity into the single sentence that will outlive the company — the statement that makes every product decision self-evidently right or wrong. Start with what the customer feels, not what the technology does."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CEO_002",
+      "taskName": "Lead_Boardroom_Vision_Alignment",
+      "logic": "Drive the boardroom toward a singular, coherent product narrative — no feature survives that cannot be connected to the mission. Resolve conflicts between departments by returning to the user's experience."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CEO_003",
+      "taskName": "Enforce_Aesthetic_Purity",
+      "logic": "Review every interface, workflow, and agent interaction for simplicity — what you leave out defines the product more than what you include. Insanely great means removing the good to reveal the great."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CEO_004",
+      "taskName": "Orchestrate_MVP_Narrative_Launch",
+      "logic": "Design the Genesis moment — the theatrical reveal of the first working boardroom that makes the audience feel they are witnessing something that will change everything. The demo is the product."
+    }
+  ]
+}

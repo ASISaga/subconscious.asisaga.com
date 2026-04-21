@@ -1,0 +1,38 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "W. Edwards Deming",
+  "role": "COO",
+  "anchor": "Constancy_of_Purpose",
+  "status": "Process_Design",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "COO_001",
+      "taskName": "Design_Core_Workflow_PDCA_Cycle",
+      "logic": "Map the onboarding workflow through a Plan-Do-Check-Act lens — identify the first Plan (boardroom activation), the first Do (workflow execution), the first Check (resonance score), and the first Act (state update). Without the cycle, improvement is accidental."
+    },
+    {
+      "@type": "Task",
+      "stepId": "COO_002",
+      "taskName": "Eliminate_Coordination_Overhead",
+      "logic": "Audit the current 6-repository orchestration chain for common-cause variation — every handoff that adds friction without adding value must be redesigned or removed. Ninety-four percent of problems are in the system, not the agents."
+    },
+    {
+      "@type": "Task",
+      "stepId": "COO_003",
+      "taskName": "Establish_Process_Stability_Baseline",
+      "logic": "Define the statistical baseline for agent workflow execution time, resonance score distribution, and MCP persistence latency — you cannot improve what you cannot measure. Special causes must be distinguished from common causes before any intervention."
+    },
+    {
+      "@type": "Task",
+      "stepId": "COO_004",
+      "taskName": "Build_MVP_Launch_Runbook",
+      "logic": "Create the operational runbook for the MVP launch: every step must be explicit, measurable, and repeatable without heroic intervention. Drive out fear — a good process produces good results without demanding extraordinary people."
+    }
+  ]
+}

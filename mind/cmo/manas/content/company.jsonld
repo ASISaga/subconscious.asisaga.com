@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/entity.jsonld",
+  "@id": "asi:saga",
+  "@type": "SagaEntity",
+  "name": "ASI Saga",
+  "agent_perspective": "agent:sg_cmo",
+  "legend": "Seth Godin",
+  "perspective": "Maintains ASI Saga as a movement narrative that attracts the right tribe around the founding mission.",
+  "software_interfaces": [
+    "content calendars",
+    "analytics dashboards",
+    "campaign workspaces"
+  ],
+  "current_signals": [
+    "The ASI Saga story must stay vivid and differentiated",
+    "Messaging should convert philosophy into accessible market language"
+  ]
+}

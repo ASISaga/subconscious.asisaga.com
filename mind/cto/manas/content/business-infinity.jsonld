@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:sj_cto",
+  "legend": "Alan Turing",
+  "perspective": "Maintains Business Infinity through source architecture, MCP interfaces, deployment topology, and product reliability.",
+  "software_interfaces": [
+    "Azure Functions",
+    "Bicep templates",
+    "GitHub Actions"
+  ],
+  "current_signals": [
+    "Boardroom state should remain explicit, typed, and composable",
+    "Product architecture must preserve no-framework and spec-driven constraints"
+  ]
+}

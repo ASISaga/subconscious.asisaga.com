@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asisaga.com/schemas/responsibilities.schema.json",
+  "title": "RoleResponsibilities",
+  "description": "JSON Schema for CXO role-responsibility JSON-LD files. Each file declares the committed responsibilities of one CXO across one dimension (Entrepreneur | Manager | DomainExpert), authored through Werner Erhard's ontological frame of responsibility-as-authorship.",
+  "type": "object",
+  "required": [
+    "@context",
+    "@id",
+    "@type",
+    "role",
+    "dimension",
+    "dimension_frame",
+    "erhard_principle",
+    "responsibilities"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "@context": {
+      "description": "JSON-LD context URI. Must resolve to the canonical responsibilities context.",
+      "type": "string",
+      "const": "https://asisaga.com/contexts/responsibilities.jsonld"
+    },
+    "@id": {
+      "description": "Canonical IRI for this responsibility document. Pattern: agent:{agent_id}/responsibilities/{dimension_slug}",
+      "type": "string",
+      "pattern": "^agent:[a-z0-9_]+/responsibilities/(entrepreneur|manager|domain-expert)$",
+      "examples": [
+        "agent:ceo/responsibilities/entrepreneur",
+        "agent:cfo/responsibilities/manager",
+        "agent:cto/responsibilities/domain-expert"
+      ]
+    },
+    "@type": {
+      "description": "JSON-LD type. Must be RoleResponsibilities.",
+      "type": "string",
+      "const": "RoleResponsibilities"
+    },
+    "role": {
+      "description": "Human-readable CXO role label.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64,
+      "examples": ["CEO", "CFO", "COO", "CMO", "CHRO", "CTO", "CSO", "Founder"]
+    },
+    "dimension": {
+      "description": "The responsibility dimension this document covers.",
+      "type": "string",
+      "enum": ["Entrepreneur", "Manager", "DomainExpert"]
+    },
+    "dimension_frame": {
+      "description": "Narrative description of the dimension frame — what authorship means in this dimension for this role.",
+      "type": "string",
+      "minLength": 20
+    },
+    "erhard_principle": {
+      "description": "A first-person, role/dimension-specific declaration of unconditional ownership authored through Werner Erhard's ontological frame.",
+      "type": "string",
+      "minLength": 20
+    },
+    "responsibilities": {
+      "description": "Ordered list of committed responsibilities for this role/dimension pair.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Responsibility"
+      }
+    }
+  },
+  "$defs": {
+    "Responsibility": {
+      "title": "Responsibility",
+      "description": "A single committed responsibility, expressed as committed authorship rather than obligation.",
+      "type": "object",
+      "required": [
+        "@type",
+        "title",
+        "commitment",
+        "scope",
+        "accountability"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "description": "JSON-LD type. Must be Responsibility.",
+          "type": "string",
+          "const": "Responsibility"
+        },
+        "title": {
+          "description": "Short, noun-phrase title for this responsibility (3–10 words).",
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "commitment": {
+          "description": "First-person declaration of committed authorship. Must begin with \"I am the committed source of\".",
+          "type": "string",
+          "pattern": "^I am the committed source of",
+          "minLength": 20
+        },
+        "scope": {
+          "description": "The domain, boundaries, and key dimensions this responsibility covers.",
+          "type": "string",
+          "minLength": 10
+        },
+        "accountability": {
+          "description": "Concrete, observable deliverable or metric that proves this responsibility is being honoured.",
+          "type": "string",
+          "minLength": 10
+        },
+        "planner_task_id": {
+          "description": "Microsoft Planner task ID once this responsibility has been synced to a Planner plan. Populated by the planner sync workflow.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

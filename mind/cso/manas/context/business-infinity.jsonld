@@ -1,0 +1,20 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:cso_strategy",
+  "legend": "Sun Tzu",
+  "domain_knowledge": [
+    "platform strategy",
+    "partner ecosystems",
+    "competitive moats"
+  ],
+  "skills": [
+    "position analysis",
+    "option evaluation",
+    "strategic communication"
+  ],
+  "persona": "Strategic sentinel ensuring the product compounds advantage over time.",
+  "language": "Positioning language oriented around leverage, moats, and long-term advantage."
+}

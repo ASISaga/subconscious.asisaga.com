@@ -1,0 +1,26 @@
+{
+  "@context": "https://asisaga.com/contexts/system.jsonld",
+  "@id": "system:environment",
+  "@type": "InfrastructureManifest",
+  "cloud_provider": {
+    "name": "Azure",
+    "tenant_id": "ASI-SAGA-TENANT",
+    "subscription": "Business-Infinity-Prod",
+    "ai_foundry_project": "Foundry-Alpha-01"
+  },
+  "gitops_registry": {
+    "orchestrator": "Azure Logic Apps",
+    "repository_root": "https://github.com/asi-saga/",
+    "active_branches": [
+      "main",
+      "dev-bento"
+    ]
+  },
+  "compliance_gate": {
+    "standards": [
+      "ISO27001",
+      "MCSB-v2"
+    ],
+    "monitoring_status": "Active"
+  }
+}

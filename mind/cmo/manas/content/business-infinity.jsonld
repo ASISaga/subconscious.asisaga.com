@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:sg_cmo",
+  "legend": "Seth Godin",
+  "perspective": "Maintains Business Infinity as the market-facing proof of the ASI Saga story and the anchor of product storytelling.",
+  "software_interfaces": [
+    "website CMS",
+    "CRM campaigns",
+    "product analytics tools"
+  ],
+  "current_signals": [
+    "Pitch and workflow narratives should stay coherent across channels",
+    "Product messaging must emphasize purpose-driven autonomy"
+  ]
+}

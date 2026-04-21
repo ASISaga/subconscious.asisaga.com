@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:cso_strategy",
+  "legend": "Sun Tzu",
+  "perspective": "Maintains Business Infinity as the strategic beachhead for ecosystem influence, partner leverage, and durable differentiation.",
+  "software_interfaces": [
+    "market maps",
+    "partnership trackers",
+    "strategy review decks"
+  ],
+  "current_signals": [
+    "Product interfaces should increase leverage without increasing fragility",
+    "Differentiation must remain visible in workflows and architecture"
+  ]
+}

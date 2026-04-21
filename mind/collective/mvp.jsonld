@@ -1,0 +1,50 @@
+{
+  "@context": "https://asisaga.com/contexts/mvp.jsonld",
+  "@id": "mvp:genesis",
+  "@type": "MVPManifest",
+  "@graph": [
+    {
+      "@context": "https://asisaga.com/contexts/mvp.jsonld",
+      "@id": "mvp:session:001",
+      "@type": "StartupPhase",
+      "name": "ASI Saga Genesis MVP",
+      "parentEntity": "asi:saga",
+      "productUtilized": "bi:product:core"
+    },
+    {
+      "@context": "https://asisaga.com/contexts/mvp.jsonld",
+      "@id": "mvp:board:alpha",
+      "@type": "BoardroomConfiguration",
+      "activeNodes": [
+        "pg_founder",
+        "sj_cto",
+        "sg_cmo"
+      ],
+      "status": "Operational"
+    },
+    {
+      "@context": "https://asisaga.com/contexts/mvp.jsonld",
+      "@id": "mvp:infra:current",
+      "@type": "InfrastructureState",
+      "provider": "Azure",
+      "provisioning": "Bicep",
+      "gitOps": "Logic Apps",
+      "compliance": "ISO27001"
+    },
+    {
+      "@context": "https://asisaga.com/contexts/mvp.jsonld",
+      "@id": "mvp:repo:active",
+      "@type": "RepositoryRegistry",
+      "primaryRepo": "asisaga-core-orchestration",
+      "totalReposManaged": 15,
+      "branchStrategy": "Main-Only-Gatekept"
+    },
+    {
+      "@context": "https://asisaga.com/contexts/mvp.jsonld",
+      "@id": "mvp:goal:immediate",
+      "@type": "Milestone",
+      "description": "First multi-agent validated commit via VS Code Copilot",
+      "deadline": "2026-04-10"
+    }
+  ]
+}

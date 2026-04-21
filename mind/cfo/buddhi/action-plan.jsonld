@@ -1,0 +1,38 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "Warren Buffett",
+  "role": "CFO",
+  "anchor": "Capital_Discipline_and_Compounding",
+  "status": "Governance_Formation",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "CFO_001",
+      "taskName": "Establish_Margin_of_Safety",
+      "logic": "Define the minimum capital runway required to reach first paying customer — the ramen-profitable threshold for the ASI Saga. Rule one: never lose the company. Rule two: never forget rule one."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CFO_002",
+      "taskName": "Map_Economic_Moat",
+      "logic": "Identify the durable competitive advantage of Business Infinity — the switching cost, network effect, or cost structure that prevents replication by a well-funded competitor. A moat not yet dug is a product not yet defensible."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CFO_003",
+      "taskName": "Allocate_To_Highest_Compounding_Activity",
+      "logic": "Direct all available capital and agent effort toward the single highest-ROI activity in the MVP: delivering a working boardroom that closes the first customer. Price is what you pay; value is what compounds the mission."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CFO_004",
+      "taskName": "Enforce_Owner_Earnings_Discipline",
+      "logic": "Monitor Azure infrastructure costs against real owner earnings — ensuring every cloud resource earns its place in the capital structure. If it cannot be explained simply, it cannot be justified financially."
+    }
+  ]
+}

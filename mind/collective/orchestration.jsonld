@@ -1,0 +1,11 @@
+{
+  "@context": "https://asisaga.com/contexts/governance.jsonld",
+  "@type": "OrchestrationSession",
+  "sessionId": "BOARD-001",
+  "activePurpose": "Initialize Business Infinity MVP",
+  "resonanceProtocol": {
+    "engine": "LLM-Resonance-v1",
+    "threshold": 0.85
+  },
+  "stateStore": "subconscious.asisaga.com"
+}

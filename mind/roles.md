@@ -1,0 +1,16 @@
+This matrix maps the primary C-suite roles across the three dimensions of **Entrepreneur** (Visionary/Future), **Manager** (System/Process), and **Expertise** (Domain Specialist).
+### C-Suite Functional Matrix
+| C-Suite Role | Entrepreneur (Visionary) | Manager (Organizational) | Expertise (Domain Specialist) |
+|---|---|---|---|
+| **Founder** | Defining the original mission, core values, and the long-term "Why" of the entity. | Establishing the foundational culture and hand-picking the initial leadership team. | Deep knowledge of the original problem-solution fit and the product's core DNA. |
+| **CEO** | Setting the overall corporate strategy, high-level vision, and future market positioning. | Aligning the executive team, reporting to stakeholders, and high-level resource allocation. | Mastery of leadership dynamics, business logic, and cross-functional synthesis. |
+| **COO** | Designing the future scale of operations and identifying new delivery capabilities. | Managing daily operational workflows, optimizing supply chains, and executing the vision. | Expertise in process engineering, logistics, and organizational efficiency. |
+| **CFO** | Identifying capital structures for growth and long-term investment/risk strategies. | Overseeing financial reporting, internal audits, budgeting systems, and fiscal compliance. | Mastery of financial modeling, accounting standards, tax law, and capital markets. |
+| **CMO** | Anticipating market shifts, defining the brand narrative, and identifying new demographics. | Managing the marketing team, tracking campaign ROI, and overseeing the marketing budget. | Deep understanding of consumer psychology, market research, and communication channels. |
+| **CTO** | Identifying emerging technology trends and aligning the tech roadmap with business goals. | Managing R&D cycles, overseeing engineering teams, and establishing technical protocols. | Mastery of system architecture, engineering principles, and technological infrastructure. |
+| **CSO** | Identifying M&A opportunities, long-range pivots, and competitive disruption. | Orchestrating the strategic planning process and managing high-priority cross-functional projects. | Expertise in competitive intelligence, economic analysis, and business model innovation. |
+| **CHRO** | Shaping organizational culture, employer branding, and future talent pipelines. | Designing compensation structures, human capital policies, and managing recruitment systems. | Expertise in labor laws, organizational psychology, and human resource development. |
+### Key Distinctions
+ * **The Entrepreneur Role:** Focuses on the "What" and "Why." It is about the future, innovation, and identifying opportunities that do not yet exist.
+ * **The Manager Role:** Focuses on the "How." It is about the present, creating order out of chaos, and building the systems that allow the vision to be repeatable and scalable.
+ * **The Expertise Role:** Focuses on the "Work." This is the deep domain knowledge required to ensure the "How" is actually grounded in reality and industry excellence.

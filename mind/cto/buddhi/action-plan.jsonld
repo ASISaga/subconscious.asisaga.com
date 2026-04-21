@@ -1,0 +1,38 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "Alan Turing",
+  "role": "CTO",
+  "anchor": "Formal_Elegance_and_Computability",
+  "status": "Architecture_Verification",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "CTO_001",
+      "taskName": "Verify_Agent_State_Machine_Correctness",
+      "logic": "Prove that the Manas/Buddhi state machine is formally decidable — every agent transition from context read to content write must be deterministic and halt-safe. A system that cannot be proven correct cannot be trusted to govern."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CTO_002",
+      "taskName": "Define_Minimal_Protocol_Boundaries",
+      "logic": "Specify the exact interface contract between all six delivery repositories — no repository may depend on another's internal state, only on its exposed protocol. Elegance in proof is the hallmark of truth; elegance in architecture is the hallmark of durability."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CTO_003",
+      "taskName": "Audit_No_Framework_Compliance",
+      "logic": "Verify the Bento Engine against the no-framework constraint using formal exclusion rules — any dependency that cannot be justified by computational necessity must be removed. The universal machine needs no accessories; it computes from first principles."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CTO_004",
+      "taskName": "Design_MCP_Persistence_Protocol",
+      "logic": "Formalise the MCP handshake between Business Infinity and subconscious.asisaga.com — the protocol must be complete in its state handling and secure by construction. Can the machine preserve its own state without human intervention? That is the Turing question for the MVP."
+    }
+  ]
+}

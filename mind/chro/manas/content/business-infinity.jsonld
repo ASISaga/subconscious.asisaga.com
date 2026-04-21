@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:chro",
+  "legend": "Peter Drucker",
+  "perspective": "Maintains Business Infinity through adoption readiness, role clarity, and the human interfaces around the product.",
+  "software_interfaces": [
+    "enablement portals",
+    "knowledge bases",
+    "team collaboration suites"
+  ],
+  "current_signals": [
+    "Product onboarding must reduce ambiguity for teams",
+    "Role expectations should be explicit in every boardroom workflow"
+  ]
+}

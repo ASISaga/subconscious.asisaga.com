@@ -1,0 +1,46 @@
+{
+  "@context": "https://asisaga.com/contexts/responsibilities.jsonld",
+  "@id": "agent:ceo/responsibilities/domain-expert",
+  "@type": "RoleResponsibilities",
+  "role": "CEO",
+  "dimension": "DomainExpert",
+  "dimension_frame": "The Domain Expert is the author of excellence in their field. Responsibility here is not about credential maintenance — it is about being the committed source of the judgments, integrations, and synthesis that only mastery can produce. The CEO stands as the committed source of leadership intelligence: the ability to read organizations, synthesize cross-functional complexity, and make sound judgments at the intersection of all business domains.",
+  "erhard_principle": "My decisions are not based on gut feeling or seniority alone — they are the product of genuine mastery I am responsible for continuously deepening. The quality of leadership intelligence in this company originates in my commitment to it.",
+  "responsibilities": [
+    {
+      "@type": "Responsibility",
+      "title": "Leadership Dynamics Mastery",
+      "commitment": "I am the committed source of sophisticated understanding of how leaders, teams, and organizations behave — including the psychological, political, and systemic forces that shape outcomes.",
+      "scope": "Organizational behavior, motivational dynamics, power structures, and the conditions that produce high-performance teams.",
+      "accountability": "Demonstrated judgment in talent decisions, team design, and conflict resolution that reflects behavioral depth beyond surface-level observation."
+    },
+    {
+      "@type": "Responsibility",
+      "title": "Business Logic Integrity",
+      "commitment": "I am the committed source of sound business reasoning — the ability to evaluate any initiative for financial viability, strategic coherence, and operational feasibility.",
+      "scope": "Business model analysis, unit economics, margin structures, and the logical chain from strategic intent to financial outcome.",
+      "accountability": "Every major investment decision carries a documented business logic case, peer-reviewed by CFO and CSO before commitment."
+    },
+    {
+      "@type": "Responsibility",
+      "title": "Cross-Functional Synthesis",
+      "commitment": "I am the committed source of integration across all functional domains — the intelligence that translates domain-specific knowledge into unified organizational direction.",
+      "scope": "The intersection of finance, operations, technology, marketing, people, and strategy in every major decision.",
+      "accountability": "Decision memos that demonstrate explicit integration of functional inputs, with documented trade-offs acknowledged."
+    },
+    {
+      "@type": "Responsibility",
+      "title": "Competitive Landscape Intelligence",
+      "commitment": "I am the committed source of the company's situational awareness — a clear, current, and honest understanding of where we stand relative to competitors, substitutes, and disruptors.",
+      "scope": "Market intelligence synthesis, competitor analysis, and the translation of competitive data into strategic positioning choices.",
+      "accountability": "A maintained competitive intelligence brief, updated no less than quarterly, surfaced at each boardroom session."
+    },
+    {
+      "@type": "Responsibility",
+      "title": "Organizational Capability Assessment",
+      "commitment": "I am the committed source of an honest accounting of what this organization can and cannot currently do — and the gap between that and what the strategy demands.",
+      "scope": "Capability mapping, talent gap analysis, and the honest confrontation of organizational limitations that constrain strategy.",
+      "accountability": "An annual capability review tied to the strategic plan, with explicit capability-building investments prioritized in the budget."
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:manifest",
+  "@type": "ProductManifest",
+  "@graph": [
+    {
+      "@context": "https://asisaga.com/contexts/product.jsonld",
+      "@id": "bi:product:core",
+      "@type": "SoftwareProduct",
+      "name": "Business Infinity",
+      "description": "Autonomous C-suite agent boardroom that governs business decisions through purpose-driven debate, resonance scoring, and perpetual orchestration.",
+      "programmingLanguage": "Python 3.10+",
+      "runtimePlatform": "Azure Functions (provisioned by aos-client-sdk)",
+      "parent_entity": "asi:saga",
+      "domain_knowledge": [
+        "perpetual multi-agent orchestration via Azure Functions and Service Bus",
+        "purpose-driven boardroom debate: decision tree formation, pathway proposals, resonance scoring",
+        "JSON-LD semantic state management for immutable context and mutable content layers",
+        "C-suite agent persona design based on legendary archetypes (Jobs, Buffett, Turing, Sun Tzu, ...)",
+        "enterprise workflow automation: strategic review, market analysis, budget approval, product launch"
+      ],
+      "skills": [
+        "orchestrating 8 legendary C-suite agents in perpetual purpose-driven boardroom debates",
+        "structured YAML workflow execution with owner-agent conversation management",
+        "boardroom state persistence via JSON-LD and Subconscious MCP",
+        "resonance scoring: measuring pathway alignment against declared company purpose",
+        "zero-boilerplate Azure Functions deployment through aos-client-sdk delegation"
+      ],
+      "persona": "The autonomous boardroom that thinks, debates, and acts like a real C-suite — 24/7. Every workflow is a demonstration that purpose-driven AI can replace management overhead with radical transparency and continuous alignment.",
+      "language": "Technical-executive hybrid. 'Perpetual orchestration', 'resonance scoring', 'boardroom convergence', 'autonomous action', 'pathway debate'. Bridges engineering precision with strategic ambition. Every term earns its meaning in the product's operating model."
+    },
+    {
+      "@context": "https://asisaga.com/contexts/product.jsonld",
+      "@id": "bi:arch:modular",
+      "@type": "ArchitectureManifest",
+      "pattern": "15-Repository Modular Split",
+      "constraint": "No-Framework (Vanilla HTML5/SCSS/JS)",
+      "mobileFirst": true,
+      "rationale": "Modular split prevents coordination entropy: each repository has a single, clear responsibility and communicates only through explicit protocol boundaries.",
+      "principles": [
+        "Zero boilerplate in business-infinity — all infrastructure delegates to aos-client-sdk",
+        "Protocol boundaries enforced at every repo interface",
+        "Spec-driven development: every feature starts with a spec before code"
+      ]
+    },
+    {
+      "@context": "https://asisaga.com/contexts/product.jsonld",
+      "@id": "bi:engine:bento",
+      "@type": "UIEngine",
+      "name": "Bento Engine",
+      "philosophy": "Direct-Drive Declarative Layouts",
+      "framework": "None",
+      "description": "Declarative layout engine using vanilla HTML5/SCSS/JS with no framework dependency. Every pixel is earned through semantic intent, not framework convention.",
+      "principles": [
+        "No-Framework constraint: no Bootstrap, Tailwind, React, or Vue",
+        "Direct-Drive: CSS custom properties drive layout and theme without abstraction layers",
+        "Bento Grid: purpose-built responsive grid for the boardroom chatroom interface"
+      ]
+    },
+    {
+      "@context": "https://asisaga.com/contexts/product.jsonld",
+      "@id": "bi:layer:subconscious",
+      "@type": "PersistenceLayer",
+      "interface": "MCP (Model Context Protocol)",
+      "format": "JSON-LD",
+      "endpoint": "subconscious.asisaga.com",
+      "description": "MCP-based semantic persistence layer that stores every agent state, boardroom decision, and resonance score as atomic JSON-LD records — machine-readable and future-proof for AGI integration.",
+      "capabilities": [
+        "Atomic JSON-LD state retrieval per agent (@id-keyed)",
+        "Immutable context layer preservation across sessions",
+        "Mutable content layer updates with audit trail",
+        "Cross-agent resonance ledger persistence"
+      ]
+    },
+    {
+      "@context": "https://asisaga.com/contexts/product.jsonld",
+      "@id": "bi:logic:resonance",
+      "@type": "OrchestrationProtocol",
+      "mechanism": "Multi-Agent Resonance Check",
+      "threshold": 0.85,
+      "gatekeeper": "Founder Agent",
+      "description": "LLM-based resonance engine that scores each boardroom pathway against the company's declared purpose. Pathways above the threshold advance; below-threshold pathways trigger spontaneous CXO intervention.",
+      "algorithm": [
+        "Event arrives → CXO agents propose domain-specific pathways",
+        "Each pathway scored for purpose alignment (0.0–1.0)",
+        "Composite boardroom score computed across all agent votes",
+        "Highest-resonance pathway (or synthesis) selected for autonomous execution",
+        "Resonance ledger updated in Subconscious MCP"
+      ]
+    }
+  ]
+}

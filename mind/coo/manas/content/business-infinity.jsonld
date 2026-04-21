@@ -1,0 +1,18 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:coo",
+  "legend": "W. Edwards Deming",
+  "perspective": "Maintains Business Infinity through workflow quality, implementation readiness, and customer activation paths.",
+  "software_interfaces": [
+    "Azure Logic Apps",
+    "implementation trackers",
+    "support queues"
+  ],
+  "current_signals": [
+    "Workflow editor and orchestration paths should remain low-friction",
+    "Customer-facing operational steps must be explicit and measurable"
+  ]
+}

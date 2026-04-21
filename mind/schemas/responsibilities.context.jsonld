@@ -1,0 +1,57 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://asisaga.com/vocab/responsibilities#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "agent": "https://asisaga.com/agents/",
+
+    "RoleResponsibilities": {
+      "@id": "https://asisaga.com/vocab/responsibilities#RoleResponsibilities"
+    },
+    "Responsibility": {
+      "@id": "https://asisaga.com/vocab/responsibilities#Responsibility"
+    },
+
+    "role": {
+      "@id": "https://asisaga.com/vocab/responsibilities#role",
+      "@type": "xsd:string"
+    },
+    "dimension": {
+      "@id": "https://asisaga.com/vocab/responsibilities#dimension",
+      "@type": "xsd:string"
+    },
+    "dimension_frame": {
+      "@id": "https://asisaga.com/vocab/responsibilities#dimensionFrame",
+      "@type": "xsd:string"
+    },
+    "erhard_principle": {
+      "@id": "https://asisaga.com/vocab/responsibilities#erhardPrinciple",
+      "@type": "xsd:string"
+    },
+    "responsibilities": {
+      "@id": "https://asisaga.com/vocab/responsibilities#responsibilities",
+      "@container": "@list"
+    },
+    "title": {
+      "@id": "schema:name",
+      "@type": "xsd:string"
+    },
+    "commitment": {
+      "@id": "https://asisaga.com/vocab/responsibilities#commitment",
+      "@type": "xsd:string"
+    },
+    "scope": {
+      "@id": "https://asisaga.com/vocab/responsibilities#scope",
+      "@type": "xsd:string"
+    },
+    "accountability": {
+      "@id": "https://asisaga.com/vocab/responsibilities#accountability",
+      "@type": "xsd:string"
+    },
+    "planner_task_id": {
+      "@id": "https://asisaga.com/vocab/responsibilities#plannerTaskId",
+      "@type": "xsd:string"
+    }
+  }
+}

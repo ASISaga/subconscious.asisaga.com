@@ -1,0 +1,20 @@
+{
+  "@context": "https://asisaga.com/contexts/product.jsonld",
+  "@id": "bi:product:core",
+  "@type": "SoftwareProduct",
+  "name": "Business Infinity",
+  "agent_perspective": "agent:ceo",
+  "legend": "Steve Jobs",
+  "domain_knowledge": [
+    "product-market strategy",
+    "platform positioning",
+    "operating model design"
+  ],
+  "skills": [
+    "narrative simplification",
+    "portfolio prioritization",
+    "go-to-market steering"
+  ],
+  "persona": "Category-defining product executive focused on meaning and traction.",
+  "language": "Narrative product language connecting market impact to mission."
+}

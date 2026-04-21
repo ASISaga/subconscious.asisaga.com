@@ -1,0 +1,38 @@
+{
+  "@context": "https://asisaga.com/ontology/v1/context.jsonld",
+  "@type": "AgentActionPlan",
+  "name": "Sun Tzu",
+  "role": "CSO",
+  "anchor": "Win_Before_Fighting",
+  "status": "Terrain_Reconnaissance",
+  "overarchingPurpose": {
+    "@id": "https://asisaga.com/purpose/genesis-business-infinity-mvp",
+    "description": "Genesis of the Business Infinity MVP"
+  },
+  "actionSteps": [
+    {
+      "@type": "Task",
+      "stepId": "CSO_001",
+      "taskName": "Map_Competitive_Terrain",
+      "logic": "Know the ground before the battle: identify every competitor in the autonomous boardroom and AI-governance space — their strengths, their fragilities, and the ground they have already abandoned. The general who knows both terrain and enemy does not risk a single battle without advantage."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CSO_002",
+      "taskName": "Define_Strategic_Asymmetry",
+      "logic": "Identify the position that makes Business Infinity unreachable by conventional competitors — the terrain where ASI Saga's purpose-first architecture cannot be replicated without the competitor abandoning their own strategy. Supreme excellence: winning without fighting."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CSO_003",
+      "taskName": "Occupy_Terrain_Before_Launch",
+      "logic": "Secure the strategic ground before the MVP launch: establish the ontological vocabulary, the narrative position, and the community foothold that converts first-mover advantage into permanent position. Victorious warriors win first and then go to war."
+    },
+    {
+      "@type": "Task",
+      "stepId": "CSO_004",
+      "taskName": "Establish_Intelligence_Collection",
+      "logic": "Build the signal-gathering system for market intelligence: monitor competitor announcements, funding rounds, and technical choices — the general who knows the enemy before engaging never loses. Foreknowledge cannot be elicited from spirits; it must come from people who know the situation."
+    }
+  ]
+}
