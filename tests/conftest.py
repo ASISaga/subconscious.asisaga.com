@@ -82,11 +82,11 @@ def _fake_storage(monkeypatch):
     FakeTableServiceClient._tables = {}
     monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", "DefaultEndpointsProtocol=https;AccountName=fake")
     monkeypatch.setattr(
-        "subconscious.storage.TableServiceClient",
+        "storage.conversations.TableServiceClient",
         FakeTableServiceClient,
     )
     monkeypatch.setattr(
-        "subconscious.schema_storage.TableServiceClient",
+        "storage.schemas.TableServiceClient",
         FakeTableServiceClient,
     )
 

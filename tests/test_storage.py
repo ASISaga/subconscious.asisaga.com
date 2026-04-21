@@ -1,10 +1,10 @@
-"""Tests for subconscious.storage — conversation persistence layer."""
+"""Tests for storage.conversations — conversation persistence layer."""
 
 from __future__ import annotations
 
 import time
 
-from subconscious import storage
+from storage import conversations as storage
 
 
 class TestOrchestrationCRUD:

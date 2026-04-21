@@ -1,8 +1,8 @@
-"""Tests for subconscious.app — landing page HTML."""
+"""Tests for templates.get_app_html — landing page HTML."""
 
 from __future__ import annotations
 
-from subconscious.app import get_app_html
+from templates import get_app_html
 
 
 class TestAppHtml:

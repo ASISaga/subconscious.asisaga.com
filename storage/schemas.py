@@ -157,13 +157,13 @@ def _schemas_dir() -> Path:
 
     1. ``SCHEMAS_DIR`` environment variable (useful for tests and deployment).
     2. ``schemas/`` at the repository root, resolved from this file's location:
-       ``subconscious/schema_storage.py`` → ``.parent`` (package dir) →
+       ``storage/schemas.py`` → ``.parent`` (package dir) →
        ``.parent`` (repo root) → ``schemas/``.
     """
     override = os.environ.get("SCHEMAS_DIR")
     if override:
         return Path(override)
-    # subconscious/schema_storage.py → .parent = subconscious/ → .parent = repo root
+    # storage/schemas.py → .parent = storage/ → .parent = repo root
     repo_root = Path(__file__).parent.parent
     return repo_root / "schemas"
 

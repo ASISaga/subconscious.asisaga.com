@@ -1,12 +1,13 @@
-"""Tests for subconscious.server — MCP tool and resource registrations."""
+"""Tests for server — MCP tool and resource registrations."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 
-from subconscious import storage
-from subconscious.server import mcp
+from server import mcp
+from storage import conversations as storage
+from storage import schemas as schema_storage
 
 
 class TestMCPToolRegistration:
@@ -159,7 +160,7 @@ class TestMCPAppsConversations:
     """
 
     def test_load_orchestrations_returns_jsonld(self):
-        from subconscious.server import fetch_orchestrations
+        from server.tools import fetch_orchestrations
         storage.create_orchestration("app-lo-1", "App test orch")
         data = fetch_orchestrations()
         assert isinstance(data, list)
@@ -167,7 +168,7 @@ class TestMCPAppsConversations:
         assert "@context" in data[0]
 
     def test_load_orchestrations_filter_by_status(self):
-        from subconscious.server import fetch_orchestrations
+        from server.tools import fetch_orchestrations
         storage.create_orchestration("app-active", "Active orch")
         storage.create_orchestration("app-done", "Completed orch")
         storage.update_orchestration_status("app-done", "completed")
@@ -177,7 +178,7 @@ class TestMCPAppsConversations:
         assert "app-active" not in ids
 
     def test_load_conversation_returns_jsonld_conversation(self):
-        from subconscious.server import fetch_conversation
+        from server.tools import fetch_conversation
         storage.create_orchestration("app-conv-1", "App conv test")
         storage.persist_message("app-conv-1", "cfo", "assistant", "Budget is on track.")
         data = fetch_conversation("app-conv-1")
@@ -190,7 +191,7 @@ class TestMCPAppsConversations:
         assert msg["sender"]["identifier"] == "cfo"
 
     def test_load_conversation_empty(self):
-        from subconscious.server import fetch_conversation
+        from server.tools import fetch_conversation
         storage.create_orchestration("app-empty", "Empty conv")
         data = fetch_conversation("app-empty")
         assert data["total"] == 0
@@ -198,7 +199,7 @@ class TestMCPAppsConversations:
 
     def test_show_conversations_returns_jsonld_itemlist(self):
         """show_conversations is a regular MCP tool returning Schema.org ItemList JSON-LD."""
-        from subconscious.server import show_conversations
+        from server.tools import show_conversations
         data = show_conversations()
         assert data["@type"] == "ItemList"
         assert data["@context"] == "https://schema.org/"
@@ -208,7 +209,7 @@ class TestMCPAppsConversations:
 
     def test_show_conversations_filtered_view_url(self):
         """show_conversations with status= passes it through to the view_url."""
-        from subconscious.server import show_conversations
+        from server.tools import show_conversations
         data = show_conversations(status="active")
         assert "status=active" in data["view_url"]
 
@@ -269,7 +270,6 @@ class TestMCPSchemaTools:
         assert result is not None
 
     def test_list_schema_contexts_filtered(self, schemas_dir):
-        from subconscious import schema_storage
         schema_storage.store_schema_context("chitta", "ceo", {"x": 1})
         schema_storage.store_schema_context("chitta", "cfo", {"x": 2})
         result = asyncio.get_event_loop().run_until_complete(
@@ -313,7 +313,6 @@ class TestMCPResourceExecution:
         assert result is not None
 
     def test_schema_context_resource(self, schemas_dir):
-        from subconscious import schema_storage
         schema_storage.store_schema_context("ahankara", "ceo", {"identity": "Visionary"})
         result = asyncio.get_event_loop().run_until_complete(
             mcp.read_resource("schema-context://ahankara/ceo")
