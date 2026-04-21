@@ -88,6 +88,7 @@ func start
 
 | Tool | Description |
 |---|---|
+| `initialize_schema_contexts` | Bootstrap Azure Table `SchemaContexts` from repository `mind/` files (one-time init, optional force overwrite) |
 | `store_schema_context` | Persist a JSON-LD document conforming to a mind schema |
 | `get_schema_context` | Retrieve a stored schema context by schema name and context id |
 | `list_schema_contexts` | List stored schema contexts (optionally filtered by schema name) |

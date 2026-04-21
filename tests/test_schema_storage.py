@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from storage import schemas as schema_storage
 
 
@@ -138,3 +140,89 @@ class TestSchemaContextCRUD:
         schema_storage.store_schema_context("chitta", "ceo", doc)
         retrieved = schema_storage.get_schema_context("chitta", "ceo")
         assert retrieved["data"]["label"] == "純粋知性 (Pure Intelligence)"
+
+
+class TestInitializeSchemaContextsFromMind:
+    """initialize_schema_contexts_from_mind() bootstrap behavior."""
+
+    def test_initializes_from_mind_directory(self, tmp_path, monkeypatch):
+        mind_dir = tmp_path / "mind"
+        (mind_dir / "ceo" / "manas" / "context").mkdir(parents=True)
+        (mind_dir / "ceo" / "manas" / "content").mkdir(parents=True)
+        (mind_dir / "ceo" / "buddhi").mkdir(parents=True)
+        (mind_dir / "ceo" / "ahankara").mkdir(parents=True)
+        (mind_dir / "ceo" / "chitta").mkdir(parents=True)
+        (mind_dir / "ceo" / "responsibilities").mkdir(parents=True)
+        (mind_dir / "ceo" / "integrity").mkdir(parents=True)
+
+        (mind_dir / "ceo" / "manas" / "ceo.jsonld").write_text(
+            json.dumps({"@type": "Manas", "identifier": "ceo"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "buddhi" / "buddhi.jsonld").write_text(
+            json.dumps({"@type": "Buddhi"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "buddhi" / "action-plan.jsonld").write_text(
+            json.dumps({"@type": "AgentActionPlan"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "ahankara" / "ahankara.jsonld").write_text(
+            json.dumps({"@type": "Ahankara"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "chitta" / "chitta.jsonld").write_text(
+            json.dumps({"@type": "Chitta"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "responsibilities" / "manager.jsonld").write_text(
+            json.dumps({"@type": "RoleResponsibilities"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "integrity" / "integrity.jsonld").write_text(
+            json.dumps({"@type": "IntegrityRegister"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "manas" / "context" / "company.jsonld").write_text(
+            json.dumps({"@type": "SagaEntity"}),
+            encoding="utf-8",
+        )
+        (mind_dir / "ceo" / "manas" / "content" / "company.jsonld").write_text(
+            json.dumps({"@type": "SagaEntity"}),
+            encoding="utf-8",
+        )
+
+        monkeypatch.setenv("MIND_DIR", str(mind_dir))
+
+        result = schema_storage.initialize_schema_contexts_from_mind()
+        assert result["initialized"] is True
+        assert result["seeded"] == 9
+
+        assert schema_storage.get_schema_context("manas", "ceo") is not None
+        assert schema_storage.get_schema_context("buddhi", "ceo") is not None
+        assert schema_storage.get_schema_context("action-plan", "ceo") is not None
+        assert schema_storage.get_schema_context("ahankara", "ceo") is not None
+        assert schema_storage.get_schema_context("chitta", "ceo") is not None
+        assert schema_storage.get_schema_context("integrity", "ceo") is not None
+        assert (
+            schema_storage.get_schema_context("responsibilities", "ceo/manager")
+            is not None
+        )
+        assert (
+            schema_storage.get_schema_context("entity-context", "ceo/company")
+            is not None
+        )
+        assert (
+            schema_storage.get_schema_context("entity-content", "ceo/company")
+            is not None
+        )
+
+    def test_skips_when_table_already_has_data(self, tmp_path, monkeypatch):
+        mind_dir = tmp_path / "mind"
+        mind_dir.mkdir()
+        monkeypatch.setenv("MIND_DIR", str(mind_dir))
+
+        schema_storage.store_schema_context("manas", "seed", {"x": 1})
+        result = schema_storage.initialize_schema_contexts_from_mind()
+        assert result["initialized"] is False
+        assert result["reason"] == "table-not-empty"
