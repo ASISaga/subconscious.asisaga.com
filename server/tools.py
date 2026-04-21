@@ -11,8 +11,67 @@ from storage import conversations as storage_conv
 from storage import schemas as schema_storage
 
 # ---------------------------------------------------------------------------
-# FastMCPApp tools — Conversations App (app-internal, not model-visible)
+# Dimension resolution — maps agent-centric state keys to (schema_name, context_id)
 # ---------------------------------------------------------------------------
+
+#: Direct (non-prefixed) dimension names that map to a top-level schema.
+_DIRECT_DIMENSIONS: dict[str, str] = {
+    "manas": "manas",
+    "buddhi": "buddhi",
+    "action-plan": "action-plan",
+    "ahankara": "ahankara",
+    "chitta": "chitta",
+    "integrity": "integrity",
+}
+
+#: Prefix-based dimension names — key is the path prefix, value is the schema name.
+#: The remainder after the prefix becomes the sub-key appended to the agent_id.
+_PREFIX_DIMENSIONS: dict[str, str] = {
+    "responsibilities/": "responsibilities",
+    "manas/content/": "entity-content",
+    "manas/context/": "entity-context",
+}
+
+
+def _resolve_dimension(agent_id: str, dimension: str) -> tuple[str, str]:
+    """Resolve an agent-centric *dimension* key to a ``(schema_name, context_id)`` pair.
+
+    Supported dimension formats:
+
+    * ``"manas"`` → ``("manas", agent_id)``
+    * ``"buddhi"`` → ``("buddhi", agent_id)``
+    * ``"action-plan"`` → ``("action-plan", agent_id)``
+    * ``"ahankara"`` → ``("ahankara", agent_id)``
+    * ``"chitta"`` → ``("chitta", agent_id)``
+    * ``"integrity"`` → ``("integrity", agent_id)``
+    * ``"responsibilities/{name}"`` → ``("responsibilities", "{agent_id}/{name}")``
+    * ``"manas/content/{entity}"`` → ``("entity-content", "{agent_id}/{entity}")``
+    * ``"manas/context/{entity}"`` → ``("entity-context", "{agent_id}/{entity}")``
+
+    Args:
+        agent_id: The CXO agent identifier (e.g. ``"ceo"``).
+        dimension: The dimension path string (see above).
+
+    Returns:
+        ``(schema_name, context_id)`` tuple.
+
+    Raises:
+        ValueError: When *dimension* is not a recognised format.
+    """
+    if dimension in _DIRECT_DIMENSIONS:
+        return (_DIRECT_DIMENSIONS[dimension], agent_id)
+    for prefix, schema_name in _PREFIX_DIMENSIONS.items():
+        if dimension.startswith(prefix):
+            sub_key = dimension[len(prefix):]
+            return (schema_name, f"{agent_id}/{sub_key}")
+    known = list(_DIRECT_DIMENSIONS) + [f"{p}{{name}}" for p in _PREFIX_DIMENSIONS]
+    raise ValueError(
+        f"Unknown dimension '{dimension}'. "
+        f"Supported formats: {known}"
+    )
+
+
+
 
 @conversations_app.tool()
 def fetch_orchestrations(status: str | None = None) -> list[dict[str, Any]]:
@@ -250,6 +309,7 @@ def store_schema_context(
     schema_name: str,
     context_id: str,
     data: dict[str, Any],
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     """Persist a JSON-LD document conforming to a boardroom mind schema.
 
@@ -265,29 +325,35 @@ def store_schema_context(
             (e.g. ``"ceo"``) or a compound key for entity perspectives
             (e.g. ``"ceo/company"``).
         data: The JSON-LD document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling — when supplied the row is stored
+            under ``{company_id}/{context_id}``.
 
     Returns:
         Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
     """
-    return schema_storage.store_schema_context(schema_name, context_id, data)
+    return schema_storage.store_schema_context(schema_name, context_id, data, company_id=company_id)
 
 
 @mcp.tool()
 def get_schema_context(
     schema_name: str,
     context_id: str,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     """Retrieve a stored boardroom mind schema context document.
 
     Args:
         schema_name: The schema the context conforms to (e.g. ``"manas"``).
         context_id: The context identifier (e.g. ``"ceo"``).
+        company_id: Optional company scope.  Must match the value used when
+            the context was stored.  Provision for multi-company/product scaling.
 
     Returns:
         Dict with ``schema_name``, ``context_id``, ``data`` (the JSON-LD
         document), and ``updated_at``, or an error dict if not found.
     """
-    result = schema_storage.get_schema_context(schema_name, context_id)
+    result = schema_storage.get_schema_context(schema_name, context_id, company_id=company_id)
     if result is None:
         return {"error": f"Schema context '{schema_name}/{context_id}' not found"}
     return result
@@ -296,23 +362,27 @@ def get_schema_context(
 @mcp.tool()
 def list_schema_contexts(
     schema_name: str | None = None,
+    company_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """List stored schema contexts, optionally filtered by schema name.
+    """List stored schema contexts, optionally filtered by schema name and company.
 
     Args:
         schema_name: Optional filter — when provided only contexts for this
             schema are returned.
+        company_id: Optional company scope filter.  Provision for
+            multi-company/product scaling.
 
     Returns:
         List of summary records with ``schema_name``, ``context_id``, and
         ``updated_at``.
     """
-    return schema_storage.list_schema_contexts(schema_name)
+    return schema_storage.list_schema_contexts(schema_name, company_id=company_id)
 
 
 @mcp.tool()
 def initialize_schema_contexts(
     force: bool = False,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     """Initialize schema-context rows from files in the repository mind directory.
 
@@ -320,8 +390,97 @@ def initialize_schema_contexts(
         force: When ``True``, writes mind data even if rows already exist.
             Default ``False`` performs one-time bootstrap only when the table
             is empty.
+        company_id: Optional company scope applied to every seeded row.
+            Provision for multi-company/product scaling.
 
     Returns:
         Initialization result with status, seeded row count, and source path.
     """
-    return schema_storage.initialize_schema_contexts_from_mind(force=force)
+    return schema_storage.initialize_schema_contexts_from_mind(force=force, company_id=company_id)
+
+
+# ---------------------------------------------------------------------------
+# MCP Tools — CXO agent state (read/write atomic mind states by agent ID)
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def get_agent_state(
+    agent_id: str,
+    dimension: str,
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Read an atomic mind-state file for a CXO agent by its unique ID reference.
+
+    Each agent stores mind state across several dimensions.  This tool lets any
+    CXO read their own (or another agent's) state by supplying their unique
+    ``agent_id`` and the ``dimension`` path.
+
+    Supported *dimension* values:
+
+    * ``"manas"`` — working memory and active focus state
+    * ``"buddhi"`` — domain intellect document
+    * ``"action-plan"`` — Buddhi action-plan toward the company purpose
+    * ``"ahankara"`` — identity and ego document
+    * ``"chitta"`` — pure intelligence document
+    * ``"integrity"`` — integrity register
+    * ``"responsibilities/{name}"`` — role responsibilities (e.g.
+      ``"responsibilities/entrepreneur"``, ``"responsibilities/manager"``,
+      ``"responsibilities/domain-expert"``)
+    * ``"manas/content/{entity}"`` — mutable entity perspective (e.g.
+      ``"manas/content/company"``, ``"manas/content/business-infinity"``)
+    * ``"manas/context/{entity}"`` — immutable entity perspective
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        dimension: The dimension path (see above).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored mind-state document, or an error dict if not found.
+    """
+    try:
+        schema_name, context_id = _resolve_dimension(agent_id, dimension)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    result = schema_storage.get_schema_context(schema_name, context_id, company_id=company_id)
+    if result is None:
+        return {
+            "error": (
+                f"No state found for agent '{agent_id}' dimension '{dimension}'"
+                + (f" (company '{company_id}')" if company_id else "")
+            )
+        }
+    return result
+
+
+@mcp.tool()
+def set_agent_state(
+    agent_id: str,
+    dimension: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write an atomic mind-state file for a CXO agent by its unique ID reference.
+
+    Persists *data* to the mind-state slot identified by ``agent_id`` +
+    ``dimension``.  See :func:`get_agent_state` for the list of valid dimension
+    values and their meanings.
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        dimension: The dimension path (e.g. ``"manas"``, ``"chitta"``,
+            ``"responsibilities/entrepreneur"``).
+        data: The JSON-LD document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``,
+        or an error dict if the dimension is unrecognised.
+    """
+    try:
+        schema_name, context_id = _resolve_dimension(agent_id, dimension)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    return schema_storage.store_schema_context(schema_name, context_id, data, company_id=company_id)

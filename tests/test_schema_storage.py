@@ -142,6 +142,84 @@ class TestSchemaContextCRUD:
         assert retrieved["data"]["label"] == "純粋知性 (Pure Intelligence)"
 
 
+class TestCompanyIdScoping:
+    """company_id provision — multi-company/product scoping in Azure Tables."""
+
+    def test_store_and_retrieve_with_company_id(self, schemas_dir):
+        """Rows stored with company_id are retrievable with the same company_id."""
+        doc = {"@type": "Manas", "agent_id": "ceo"}
+        schema_storage.store_schema_context("manas", "ceo", doc, company_id="asisaga")
+        result = schema_storage.get_schema_context("manas", "ceo", company_id="asisaga")
+        assert result is not None
+        assert result["data"] == doc
+        assert result["context_id"] == "ceo"
+
+    def test_company_scoped_row_not_found_without_scope(self, schemas_dir):
+        """A row stored with company_id is not returned when no company_id is given."""
+        doc = {"@type": "Manas"}
+        schema_storage.store_schema_context("manas", "ceo", doc, company_id="asisaga")
+        # Without company scope the plain RowKey 'ceo' does not exist
+        result = schema_storage.get_schema_context("manas", "ceo")
+        assert result is None
+
+    def test_unscoped_row_not_found_with_company_id(self, schemas_dir):
+        """A row stored without company_id is not returned when company_id is given."""
+        doc = {"@type": "Manas"}
+        schema_storage.store_schema_context("manas", "ceo", doc)
+        result = schema_storage.get_schema_context("manas", "ceo", company_id="asisaga")
+        assert result is None
+
+    def test_different_companies_isolated(self, schemas_dir):
+        """Rows for different companies are independently addressable."""
+        doc_a = {"company": "asisaga"}
+        doc_b = {"company": "techcorp"}
+        schema_storage.store_schema_context("buddhi", "ceo", doc_a, company_id="asisaga")
+        schema_storage.store_schema_context("buddhi", "ceo", doc_b, company_id="techcorp")
+
+        result_a = schema_storage.get_schema_context("buddhi", "ceo", company_id="asisaga")
+        result_b = schema_storage.get_schema_context("buddhi", "ceo", company_id="techcorp")
+        assert result_a["data"] == doc_a
+        assert result_b["data"] == doc_b
+
+    def test_list_contexts_filtered_by_company_id(self, schemas_dir):
+        """list_schema_contexts with company_id returns only that company's rows."""
+        schema_storage.store_schema_context("chitta", "ceo", {}, company_id="asisaga")
+        schema_storage.store_schema_context("chitta", "cfo", {}, company_id="asisaga")
+        schema_storage.store_schema_context("chitta", "ceo", {}, company_id="techcorp")
+
+        asisaga_list = schema_storage.list_schema_contexts("chitta", company_id="asisaga")
+        assert len(asisaga_list) == 2
+        ids = {r["context_id"] for r in asisaga_list}
+        assert ids == {"ceo", "cfo"}
+
+        techcorp_list = schema_storage.list_schema_contexts("chitta", company_id="techcorp")
+        assert len(techcorp_list) == 1
+        assert techcorp_list[0]["context_id"] == "ceo"
+
+    def test_list_context_ids_stripped_of_company_prefix(self, schemas_dir):
+        """context_id in list results has the company prefix stripped."""
+        schema_storage.store_schema_context("manas", "cfo", {}, company_id="asisaga")
+        results = schema_storage.list_schema_contexts("manas", company_id="asisaga")
+        assert results[0]["context_id"] == "cfo"
+
+    def test_initialize_with_company_id(self, tmp_path, monkeypatch):
+        """initialize_schema_contexts_from_mind respects company_id scoping."""
+        mind_dir = tmp_path / "mind"
+        (mind_dir / "ceo" / "manas").mkdir(parents=True)
+        (mind_dir / "ceo" / "manas" / "ceo.jsonld").write_text(
+            json.dumps({"@type": "Manas"}), encoding="utf-8"
+        )
+        monkeypatch.setenv("MIND_DIR", str(mind_dir))
+
+        result = schema_storage.initialize_schema_contexts_from_mind(company_id="asisaga")
+        assert result["initialized"] is True
+        assert result["seeded"] == 1
+
+        # Row is only accessible with the company scope
+        assert schema_storage.get_schema_context("manas", "ceo", company_id="asisaga") is not None
+        assert schema_storage.get_schema_context("manas", "ceo") is None
+
+
 class TestInitializeSchemaContextsFromMind:
     """initialize_schema_contexts_from_mind() bootstrap behavior."""
 

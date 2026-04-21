@@ -43,6 +43,32 @@ logger = logging.getLogger(__name__)
 SCHEMA_CONTEXTS_TABLE = "SchemaContexts"
 _SKIP_MIND_DIRS = {"collective"}
 
+#: Default company identifier used when no ``company_id`` is supplied.
+#: Provision: when multiple companies/products are onboarded, callers pass an
+#: explicit ``company_id`` to scope storage rows independently.
+DEFAULT_COMPANY_ID: str | None = None
+
+
+def _scoped_row_key(company_id: str | None, context_id: str) -> str:
+    """Return a RowKey scoped by *company_id* when one is provided.
+
+    When *company_id* is ``None`` the plain *context_id* is returned unchanged,
+    preserving backward compatibility with rows written before multi-company
+    support was introduced.  When a *company_id* is supplied the key takes the
+    form ``{company_id}/{context_id}`` so that data for different companies
+    occupies distinct rows in the same Azure Table partition.
+
+    Args:
+        company_id: Optional company scope (e.g. ``"asisaga"``).
+        context_id: The existing context identifier (e.g. ``"ceo"``).
+
+    Returns:
+        Scoped row key string.
+    """
+    if company_id:
+        return f"{company_id}/{context_id}"
+    return context_id
+
 # ---------------------------------------------------------------------------
 # Schema registry — maps canonical name → filename in boardroom/mind/schemas/
 # ---------------------------------------------------------------------------
@@ -379,6 +405,7 @@ def store_schema_context(
     schema_name: str,
     context_id: str,
     data: dict[str, Any],
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     """Persist a JSON-LD document that conforms to a mind schema.
 
@@ -389,6 +416,10 @@ def store_schema_context(
             agent id (e.g. ``"ceo"``) or a compound key for entity
             perspectives (e.g. ``"ceo/company"``).
         data: The JSON-LD document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  When
+            supplied the RowKey is prefixed with ``{company_id}/`` so
+            that data for different companies occupies distinct rows.
+            Provision for multi-company/product scaling.
 
     Returns:
         Confirmation record with ``schema_name``, ``context_id``, and
@@ -396,30 +427,41 @@ def store_schema_context(
     """
     client = _schema_contexts_client()
     now_iso = datetime.now(UTC).isoformat()
+    row_key = _scoped_row_key(company_id, context_id)
     entity: dict[str, Any] = {
         "PartitionKey": schema_name,
-        "RowKey": context_id,
+        "RowKey": row_key,
         "Content": json.dumps(data, ensure_ascii=False),
         "UpdatedAt": now_iso,
     }
+    if company_id:
+        entity["CompanyId"] = company_id
     client.upsert_entity(entity)
-    logger.info("Stored schema context %s/%s", schema_name, context_id)
+    logger.info("Stored schema context %s/%s (company=%s)", schema_name, context_id, company_id)
     return {"schema_name": schema_name, "context_id": context_id, "updated_at": now_iso}
 
 
 def get_schema_context(
     schema_name: str,
     context_id: str,
+    company_id: str | None = None,
 ) -> dict[str, Any] | None:
     """Retrieve a previously stored schema context document.
+
+    Args:
+        schema_name: The schema the context conforms to (e.g. ``"manas"``).
+        context_id: The context identifier (e.g. ``"ceo"``).
+        company_id: Optional company scope.  Must match the value used
+            when the context was stored.  Provision for multi-company scaling.
 
     Returns ``None`` if the context has not been stored yet.
     """
     if _use_demo_data():
         return _load_demo_schema_context(schema_name, context_id)
     client = _schema_contexts_client()
+    row_key = _scoped_row_key(company_id, context_id)
     try:
-        entity = client.get_entity(partition_key=schema_name, row_key=context_id)
+        entity = client.get_entity(partition_key=schema_name, row_key=row_key)
     except ResourceNotFoundError:
         return None
     content_raw = entity.get("Content", "{}")
@@ -434,11 +476,14 @@ def get_schema_context(
 
 def list_schema_contexts(
     schema_name: str | None = None,
+    company_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """List stored schema contexts, optionally filtered by schema name.
+    """List stored schema contexts, optionally filtered by schema name and company.
 
     Args:
         schema_name: When provided only contexts for this schema are returned.
+        company_id: Optional company scope.  When provided only contexts stored
+            under this company are returned.  Provision for multi-company scaling.
 
     Returns:
         List of summary records containing ``schema_name``, ``context_id``,
@@ -451,23 +496,42 @@ def list_schema_contexts(
         query = f"PartitionKey eq '{schema_name}'"
     else:
         query = "PartitionKey ne ''"
+    if company_id:
+        query += f" and CompanyId eq '{company_id}'"
     entities = client.query_entities(query)
-    return [
-        {
+    results = []
+    for e in entities:
+        row_key: str = e.get("RowKey", "")
+        stored_company = e.get("CompanyId", "")
+        # Strip company prefix from RowKey so callers see the plain context_id
+        if stored_company and row_key.startswith(f"{stored_company}/"):
+            ctx_id = row_key[len(stored_company) + 1:]
+        else:
+            ctx_id = row_key
+        results.append({
             "schema_name": e.get("PartitionKey", ""),
-            "context_id": e.get("RowKey", ""),
+            "context_id": ctx_id,
             "updated_at": e.get("UpdatedAt", ""),
-        }
-        for e in entities
-    ]
+        })
+    return results
 
 
-def initialize_schema_contexts_from_mind(force: bool = False) -> dict[str, Any]:
+def initialize_schema_contexts_from_mind(
+    force: bool = False,
+    company_id: str | None = None,
+) -> dict[str, Any]:
     """Initialize SchemaContexts rows from the repository ``mind`` directory.
 
     Initialization is intended as a one-time bootstrap. By default, the process
     is skipped when the table already contains records. Set ``force=True`` to
     overwrite existing rows with the latest file payloads.
+
+    Args:
+        force: When ``True``, writes mind data even when the table already
+            contains records.
+        company_id: Optional company scope.  When provided every seeded row is
+            stored under ``{company_id}/{context_id}`` and annotated with a
+            ``CompanyId`` attribute.  Provision for multi-company scaling.
     """
     if _use_demo_data():
         return {
@@ -490,12 +554,15 @@ def initialize_schema_contexts_from_mind(force: bool = False) -> dict[str, Any]:
     records = _collect_mind_seed_records(mind_dir)
     now_iso = datetime.now(UTC).isoformat()
     for record in records:
-        entity = {
+        row_key = _scoped_row_key(company_id, record["context_id"])
+        entity: dict[str, Any] = {
             "PartitionKey": record["schema_name"],
-            "RowKey": record["context_id"],
+            "RowKey": row_key,
             "Content": json.dumps(record["data"], ensure_ascii=False),
             "UpdatedAt": now_iso,
         }
+        if company_id:
+            entity["CompanyId"] = company_id
         client.upsert_entity(entity)
 
     logger.info("Initialized schema contexts from mind directory: %d rows", len(records))

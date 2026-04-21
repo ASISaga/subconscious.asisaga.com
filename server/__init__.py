@@ -103,6 +103,11 @@ mcp = FastMCP(
         "Use 'store_schema_context' and 'get_schema_context' to persist and retrieve "
         "JSON-LD documents (agent Manas, Buddhi, Ahankara, Chitta, and entity perspectives) "
         "that conform to the boardroom mind schemas.  "
+        "Use 'get_agent_state' and 'set_agent_state' to read and write any CXO agent's "
+        "atomic mind-state files by agent ID and dimension "
+        "(e.g. agent_id='ceo', dimension='manas' or 'responsibilities/entrepreneur').  "
+        "All schema-context and agent-state tools accept an optional 'company_id' parameter "
+        "for multi-company/product scoping (provision for future scaling).  "
         "Use 'show_conversations' to open the interactive conversation browser UI."
     ),
 )

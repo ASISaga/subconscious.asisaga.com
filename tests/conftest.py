@@ -31,7 +31,7 @@ class FakeTableClient:
         return dict(self._store[key])
 
     def query_entities(self, query: str) -> list[dict[str, Any]]:
-        """Very basic query support — filters on PartitionKey and optional Status."""
+        """Very basic query support — filters on PartitionKey, Status, and CompanyId."""
         results: list[dict[str, Any]] = []
         parts = query.split(" and ")
         filters: dict[str, str] = {}
@@ -48,6 +48,8 @@ class FakeTableClient:
             if "PartitionKey" in filters and pk != filters["PartitionKey"]:
                 match = False
             if "Status" in filters and entity.get("Status") != filters["Status"]:
+                match = False
+            if "CompanyId" in filters and entity.get("CompanyId", "") != filters["CompanyId"]:
                 match = False
             if match:
                 results.append(dict(entity))
