@@ -151,19 +151,19 @@ def _list_demo_schema_contexts(schema_name: str | None = None) -> list[dict[str,
 # ---------------------------------------------------------------------------
 
 def _schemas_dir() -> Path:
-    """Resolve the boardroom mind schemas directory.
+    """Resolve the canonical schemas directory.
 
     Resolution order:
 
     1. ``SCHEMAS_DIR`` environment variable (useful for tests and deployment).
-    2. ``../boardroom/mind/schemas/`` relative to the ``subconscious/``
-       package directory, i.e. the standard location inside the
-       ``business-infinity`` repository.
+    2. ``schemas/`` at the repository root, resolved from this file's location:
+       ``subconscious/schema_storage.py`` → ``.parent`` (package dir) →
+       ``.parent`` (repo root) → ``schemas/``.
     """
     override = os.environ.get("SCHEMAS_DIR")
     if override:
         return Path(override)
-    # subconscious/subconscious/schema_storage.py → up two levels to repo root
+    # subconscious/schema_storage.py → .parent = subconscious/ → .parent = repo root
     repo_root = Path(__file__).parent.parent
     return repo_root / "schemas"
 
