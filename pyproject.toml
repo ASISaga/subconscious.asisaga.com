@@ -25,7 +25,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["subconscious*"]
+include = ["models*", "templates*", "storage*", "server*", "blueprints*", "planner*"]
 
 [tool.ruff]
 line-length = 120

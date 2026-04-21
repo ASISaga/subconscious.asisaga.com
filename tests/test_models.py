@@ -1,10 +1,8 @@
-"""Tests for subconscious.models — Pydantic model validation."""
+"""Tests for models — Pydantic model validation."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
-from subconscious.models import (
+from models import (
     ConversationPage,
     Message,
     MessageInput,

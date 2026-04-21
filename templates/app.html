@@ -1,21 +1,3 @@
-"""Subconscious landing page.
-
-This module provides :func:`get_app_html` — the HTML landing page served at
-``/`` by the Azure Functions host.  All data access is exposed through the
-MCP endpoint at ``/mcp`` using FastMCP tools, resources, and the
-``Conversations`` MCP App.  The conversation browser is served at
-``/view/conversations`` (pure HTML5/CSS3, client-side rendering, no React).
-"""
-
-from __future__ import annotations
-
-
-def get_app_html() -> str:
-    """Return the Subconscious landing page HTML."""
-    return _APP_HTML
-
-
-_APP_HTML = """\
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,5 +87,3 @@ _APP_HTML = """\
 </div>
 </body>
 </html>
-"""
-

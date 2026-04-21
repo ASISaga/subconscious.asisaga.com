@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subconscious &#x2014; Monitor</title>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #242836;
+      --surface3:  #2d3144;
+      --border:    #2e3348;
+      --text:      #e4e6f0;
+      --muted:     #8b8fa3;
+      --dim:       #5a5e72;
+      --accent:    #6c63ff;
+      --ok:        #22c55e;
+      --ok-dim:    rgba(34,197,94,.15);
+      --warn:      #f59e0b;
+      --warn-dim:  rgba(245,158,11,.15);
+      --err:       #ef4444;
+      --err-dim:   rgba(239,68,68,.15);
+      --radius:    8px;
+      --font:      'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono:      'Cascadia Code', 'Fira Code', Consolas, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text);
+           min-height: 100vh; padding: 28px 20px; }
+
+    .page { max-width: 860px; margin: 0 auto; }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    header { display: flex; align-items: center; justify-content: space-between;
+             margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; }
+    .brand .sub { color: var(--muted); font-weight: 400; }
+    nav { display: flex; gap: 8px; align-items: center;
+          font-size: .83rem; color: var(--muted); }
+    nav a { color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+
+    /* ── Section titles ─────────────────────────────────────────────── */
+    h2 { font-size: .78rem; font-weight: 600; text-transform: uppercase;
+         letter-spacing: .07em; color: var(--muted); margin: 28px 0 10px; }
+
+    /* ── Status grid ────────────────────────────────────────────────── */
+    .status-grid { display: grid;
+                   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                   gap: 10px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border);
+                 border-radius: var(--radius); padding: 14px 18px; }
+    .stat-label { font-size: .75rem; color: var(--muted); margin-bottom: 6px; }
+    .stat-val   { font-size: 1rem; font-weight: 700; display: flex;
+                  align-items: center; gap: 6px; }
+    .stat-detail { font-size: .72rem; color: var(--muted); margin-top: 5px;
+                   font-family: var(--mono); }
+
+    .s-ok   { color: var(--ok); }
+    .s-warn { color: var(--warn); }
+    .s-err  { color: var(--err); }
+    .s-spin { color: var(--dim); animation: spin 1.2s linear infinite; }
+    @keyframes spin { to { opacity: .25; } }
+    @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:1} }
+    .s-loading { color: var(--dim); animation: pulse 1.2s ease-in-out infinite; }
+
+    /* ── Quick links ────────────────────────────────────────────────── */
+    .links { display: flex; flex-direction: column; gap: 8px; }
+    .link-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-decoration: none; color: var(--text);
+      transition: background .12s, border-color .12s;
+    }
+    .link-item:hover { background: var(--surface2); border-color: var(--accent); }
+    .li-icon { font-size: .95rem; }
+    .li-name { font-size: .87rem; font-weight: 600; }
+    .li-desc { font-size: .73rem; color: var(--muted); margin-top: 1px; }
+
+    /* ── Info table ─────────────────────────────────────────────────── */
+    .card { background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 4px 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    tr { border-bottom: 1px solid var(--border); }
+    tr:last-child { border-bottom: none; }
+    td { padding: 9px 0; vertical-align: top; }
+    td:first-child { color: var(--muted); width: 140px; white-space: nowrap; }
+    code { font-family: var(--mono); font-size: .79rem; color: var(--accent); }
+
+    /* ── Footer ─────────────────────────────────────────────────────── */
+    footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border);
+             font-size: .72rem; color: var(--dim); }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Refresh badge ──────────────────────────────────────────────── */
+    #refresh-time { font-size: .72rem; color: var(--dim); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="brand">
+      <span aria-hidden="true">&#x1f9e0;</span>
+      <h1>Subconscious <span class="sub">Monitor</span></h1>
+    </div>
+    <nav>
+      <span id="refresh-time"></span>
+      &nbsp;&middot;&nbsp;
+      <a href="/view/conversations">Conversations</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/">Home</a>
+    </nav>
+  </header>
+
+  <!-- Status cards -->
+  <h2>System Health</h2>
+  <div class="status-grid">
+    <div class="stat-card">
+      <div class="stat-label">Azure Functions</div>
+      <div class="stat-val s-loading" id="s-funcs">&#x23f3; Checking</div>
+      <div class="stat-detail" id="d-funcs"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">FastMCP Endpoint</div>
+      <div class="stat-val s-loading" id="s-mcp">&#x23f3; Checking</div>
+      <div class="stat-detail" id="d-mcp">/mcp</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Azure Table Storage</div>
+      <div class="stat-val s-loading" id="s-storage">&#x23f3; Checking</div>
+      <div class="stat-detail" id="d-storage"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Demo Data</div>
+      <div class="stat-val s-loading" id="s-demo">&#x23f3; Checking</div>
+      <div class="stat-detail" id="d-demo"></div>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <h2>Quick Links</h2>
+  <div class="links">
+    <a href="/view/conversations" class="link-item">
+      <span class="li-icon" aria-hidden="true">&#x1f4ac;</span>
+      <div>
+        <div class="li-name">Conversations Browser</div>
+        <div class="li-desc">Browse multi-agent orchestration conversations</div>
+      </div>
+    </a>
+    <a href="/mcp" class="link-item">
+      <span class="li-icon" aria-hidden="true">&#x26a1;</span>
+      <div>
+        <div class="li-name">MCP Endpoint</div>
+        <div class="li-desc">Connect your MCP client (Claude Desktop, Copilot) here</div>
+      </div>
+    </a>
+    <a href="/data/orchestrations" class="link-item" target="_blank" rel="noopener">
+      <span class="li-icon" aria-hidden="true">&#x29e1;</span>
+      <div>
+        <div class="li-name">Orchestrations JSON-LD</div>
+        <div class="li-desc">Raw Schema.org Action JSON-LD data feed</div>
+      </div>
+    </a>
+    <a href="/data/health" class="link-item" target="_blank" rel="noopener">
+      <span class="li-icon" aria-hidden="true">&#x2764;</span>
+      <div>
+        <div class="li-name">Health JSON</div>
+        <div class="li-desc">Raw health status JSON</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Endpoint reference -->
+  <h2>Endpoint Reference</h2>
+  <div class="card">
+    <table aria-label="Endpoint reference">
+      <tr><td>MCP</td><td><code>POST /mcp/{*rest}</code> &#x2014; FastMCP protocol (tools, resources, prompts)</td></tr>
+      <tr><td>Conversations</td><td><code>GET /view/conversations</code> &#x2014; HTML5/CSS3 conversation browser</td></tr>
+      <tr><td>Monitor</td><td><code>GET /monitor</code> &#x2014; This page</td></tr>
+      <tr><td>Data</td><td><code>GET /data/orchestrations</code> &#x2014; Schema.org ItemList JSON-LD</td></tr>
+      <tr><td>Data</td><td><code>GET /data/orchestrations/{id}</code> &#x2014; Schema.org Action + Conversation JSON-LD</td></tr>
+      <tr><td>Health</td><td><code>GET /data/health</code> &#x2014; Health status JSON</td></tr>
+    </table>
+  </div>
+
+  <!-- MCP tools reference -->
+  <h2>MCP Tools &amp; Resources</h2>
+  <div class="card">
+    <table aria-label="MCP tools reference">
+      <tr><td>App</td><td><code>show_conversations</code>, <code>fetch_orchestrations</code>, <code>fetch_conversation</code></td></tr>
+      <tr><td>Orchestrations</td><td><code>create_orchestration</code>, <code>list_orchestrations</code>, <code>complete_orchestration</code></td></tr>
+      <tr><td>Messages</td><td><code>persist_message</code>, <code>persist_conversation_turn</code>, <code>get_conversation</code></td></tr>
+      <tr><td>Schemas</td><td><code>list_schemas</code>, <code>get_schema</code>, <code>store_schema_context</code>, <code>get_schema_context</code>, <code>list_schema_contexts</code></td></tr>
+      <tr><td>Resources</td><td><code>orchestration://&lt;id&gt;</code> &nbsp; <code>schema://&lt;name&gt;</code> &nbsp; <code>schema-context://&lt;name&gt;/&lt;id&gt;</code></td></tr>
+      <tr><td>Prompts</td><td><code>summarize_conversation</code></td></tr>
+    </table>
+  </div>
+
+  <footer>
+    &#x1f9e0; Subconscious MCP Server &middot; FastMCP on Azure Functions &middot;
+    Schema.org JSON-LD &middot; <a href="https://github.com/ASISaga/subconscious.asisaga.com" rel="noopener">GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+/* ── Health check ───────────────────────────────────────────────────── */
+async function checkHealth() {
+  try {
+    const r    = await fetch('/data/health', { headers: { Accept: 'application/json' } });
+    const data = await r.json();
+
+    set('s-funcs',   '&#x2705; Running',  's-ok');
+    set('d-funcs',   data.version || 'Azure Functions v4');
+
+    set('s-mcp',     '&#x2705; Online',   's-ok');
+    set('d-mcp',     '/mcp &middot; ' + (data.tool_count || '14+') + ' tools');
+
+    if (data.storage === 'demo') {
+      set('s-storage', '&#x26a0; Demo mode', 's-warn');
+      set('d-storage', 'No Azure Storage connection configured');
+    } else if (data.storage === 'ok') {
+      set('s-storage', '&#x2705; Connected', 's-ok');
+      set('d-storage', 'Azure Table Storage');
+    } else {
+      set('s-storage', '&#x274c; Error', 's-err');
+      set('d-storage', data.storage_error || 'Unknown error');
+    }
+
+    if (data.demo_conversations != null) {
+      set('s-demo', '&#x2705; ' + data.demo_conversations + ' conversations', 's-ok');
+      set('d-demo', data.demo_data_dir || 'data/conversations/');
+    } else {
+      set('s-demo', '&#x2014; Not active', '');
+      set('d-demo', 'Azure Storage is in use');
+    }
+
+    document.getElementById('refresh-time').textContent =
+      'Last refresh: ' + new Date().toLocaleTimeString();
+
+  } catch (e) {
+    set('s-funcs', '&#x274c; Unreachable', 's-err');
+    ['mcp','storage','demo'].forEach(k => set('s-' + k, '&#x2014; Unknown', ''));
+  }
+}
+
+function set(id, html, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = html;
+  el.className = el.className.replace(/\bs-\S+/g, '').trim();
+  if (cls) el.classList.add(cls);
+}
+
+checkHealth();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

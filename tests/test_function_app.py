@@ -1,19 +1,12 @@
-"""Tests for function_app — graceful degradation and route registration.
+"""Tests for function_app — blueprint registration and route handler smoke tests.
 
 Verifies that:
 * The module loads without raising and exports ``app``.
-* All expected route functions are registered when all deps are present.
-* The homepage handler returns valid HTML with minimal dependencies.
-* The graceful-degradation try/except pattern exists in the source.
+* All blueprint modules load and export a ``bp`` attribute.
+* Expected route handler functions are defined in each blueprint.
+* Route handlers return correct response types.
+* Graceful-degradation try/except pattern exists in function_app source.
 * Log calls use the expected concise-success / verbose-failure pattern.
-
-Note on module-reload testing
-------------------------------
-Reloading ``function_app`` inside a test process that has already imported
-``fastmcp`` / ``beartype`` causes a circular-import error in ``beartype``
-because its C-extension state is already initialised.  We therefore test
-graceful-degradation structurally (source inspection) and behaviourally
-(calling route handlers with mocked dependencies).
 """
 
 from __future__ import annotations
@@ -40,44 +33,82 @@ class TestFunctionAppLoads:
     def test_app_is_function_app_instance(self):
         assert isinstance(function_app.app, func.FunctionApp)
 
-    def test_all_route_functions_registered(self):
-        """All four route groups must register successfully when deps are present."""
-        for name in (
-            "homepage",
-            "view_conversations",
-            "view_monitor",
-            "data_orchestrations",
-            "data_orchestration",
-            "data_health",
-            "mcp_endpoint",
-        ):
-            assert hasattr(function_app, name), (
-                f"expected route function '{name}' to be registered"
-            )
-            assert callable(getattr(function_app, name))
+
+# ---------------------------------------------------------------------------
+# Blueprint registration tests
+# ---------------------------------------------------------------------------
+
+
+class TestBlueprintRegistration:
+    """All blueprints must be importable and export a ``bp`` Blueprint."""
+
+    def test_homepage_blueprint_exports_bp(self):
+        from blueprints.homepage import bp
+        assert isinstance(bp, func.Blueprint)
+
+    def test_views_blueprint_exports_bp(self):
+        from blueprints.views import bp
+        assert isinstance(bp, func.Blueprint)
+
+    def test_data_blueprint_exports_bp(self):
+        from blueprints.data import bp
+        assert isinstance(bp, func.Blueprint)
+
+    def test_mcp_endpoint_blueprint_exports_bp(self):
+        from blueprints.mcp_endpoint import bp
+        assert isinstance(bp, func.Blueprint)
+
+    def test_homepage_blueprint_has_route_handler(self):
+        from blueprints import homepage
+        assert hasattr(homepage, "homepage")
+        assert callable(homepage.homepage)
+
+    def test_views_blueprint_has_route_handlers(self):
+        from blueprints import views
+        assert hasattr(views, "view_conversations")
+        assert callable(views.view_conversations)
+        assert hasattr(views, "view_monitor")
+        assert callable(views.view_monitor)
+
+    def test_data_blueprint_has_route_handlers(self):
+        from blueprints import data
+        assert hasattr(data, "data_orchestrations")
+        assert callable(data.data_orchestrations)
+        assert hasattr(data, "data_orchestration")
+        assert callable(data.data_orchestration)
+        assert hasattr(data, "data_health")
+        assert callable(data.data_health)
+
+    def test_mcp_endpoint_blueprint_has_route_handler(self):
+        from blueprints import mcp_endpoint
+        assert hasattr(mcp_endpoint, "mcp_endpoint")
+        assert callable(mcp_endpoint.mcp_endpoint)
 
 
 # ---------------------------------------------------------------------------
-# Homepage handler — minimal-deps smoke test
+# Homepage handler — smoke test
 # ---------------------------------------------------------------------------
 
 
 class TestHomepageHandler:
     def test_homepage_returns_html_response(self):
         """homepage() must return an HttpResponse with HTML content."""
+        from blueprints.homepage import homepage
         req = MagicMock(spec=func.HttpRequest)
-        resp = function_app.homepage(req)
+        resp = homepage(req)
         assert isinstance(resp, func.HttpResponse)
         assert "text/html" in (resp.headers.get("Content-Type") or "")
 
     def test_homepage_html_contains_subconscious(self):
+        from blueprints.homepage import homepage
         req = MagicMock(spec=func.HttpRequest)
-        resp = function_app.homepage(req)
+        resp = homepage(req)
         assert b"Subconscious" in resp.get_body()
 
     def test_homepage_html_links_to_mcp(self):
+        from blueprints.homepage import homepage
         req = MagicMock(spec=func.HttpRequest)
-        resp = function_app.homepage(req)
+        resp = homepage(req)
         assert b"/mcp" in resp.get_body()
 
 
@@ -89,14 +120,16 @@ class TestHomepageHandler:
 class TestDataHealthHandler:
     def test_data_health_returns_json_response(self):
         """data_health() must return an HttpResponse with JSON content."""
+        from blueprints.data import data_health
         req = MagicMock(spec=func.HttpRequest)
-        resp = function_app.data_health(req)
+        resp = data_health(req)
         assert isinstance(resp, func.HttpResponse)
         assert "application/json" in (resp.headers.get("Content-Type") or "")
 
     def test_data_health_body_has_status_ok(self):
+        from blueprints.data import data_health
         req = MagicMock(spec=func.HttpRequest)
-        resp = function_app.data_health(req)
+        resp = data_health(req)
         body = json.loads(resp.get_body())
         assert body.get("status") == "ok"
 
@@ -107,27 +140,20 @@ class TestDataHealthHandler:
 
 
 class TestGracefulDegradationStructure:
-    """Verify that the try/except pattern exists in function_app.py source."""
+    """Verify that the try/except blueprint-registration pattern exists in function_app.py."""
 
     _SRC = inspect.getsource(function_app)
 
-    def test_homepage_group_wrapped_in_try(self):
-        """Group 1 (homepage) must be inside a try block."""
-        assert "try:" in self._SRC
-        # homepage definition must appear after the first try:
-        try_pos = self._SRC.index("try:")
-        home_pos = self._SRC.index("def homepage(")
-        assert home_pos > try_pos, "homepage def must be inside a try block"
+    def test_function_app_uses_blueprint_registration(self):
+        """function_app must use register_functions to register blueprints."""
+        assert "register_functions" in self._SRC
 
-    def test_view_routes_wrapped_in_try(self):
-        """view_conversations and view_monitor must be inside a try block."""
-        assert "def view_conversations(" in self._SRC
-        assert "def view_monitor(" in self._SRC
-        # Both must be preceded by a try: at some point
-        assert self._SRC.count("try:") >= 2, "at least two try blocks expected for route groups"
+    def test_blueprints_wrapped_in_try(self):
+        """Each blueprint registration must be inside a try block."""
+        assert self._SRC.count("try:") >= 4, "expected at least 4 try blocks (one per blueprint)"
 
     def test_error_blocks_use_exc_info(self):
-        """Every logger.error call in graceful-degradation blocks must pass exc_info=True."""
+        """Every logger.error call must pass exc_info=True."""
         error_calls = re.findall(r"logger\.error\([^)]+\)", self._SRC)
         assert error_calls, "expected logger.error calls in function_app"
         for call_src in error_calls:
@@ -135,23 +161,12 @@ class TestGracefulDegradationStructure:
                 f"logger.error call missing exc_info=True: {call_src!r}"
             )
 
-    def test_mcp_asgi_not_at_bare_module_level(self):
-        """_mcp_asgi must be created inside a try block, not at bare module level."""
-        src_lines = self._SRC.splitlines()
-        for i, line in enumerate(src_lines):
-            stripped = line.strip()
-            if stripped.startswith("_mcp_asgi ="):
-                # The line must be indented (inside a try block)
-                assert line.startswith("    "), (
-                    f"_mcp_asgi assignment at line {i + 1} must be indented inside a try block"
-                )
-
-    def test_homepage_registered_before_mcp(self):
-        """homepage route must appear before the MCP try block in the source."""
-        home_pos = self._SRC.index("def homepage(")
-        mcp_try_pos = self._SRC.index("mcp.http_app(")
-        assert home_pos < mcp_try_pos, (
-            "homepage route must be registered before the MCP ASGI adapter is built"
+    def test_homepage_blueprint_registered_before_mcp(self):
+        """Homepage blueprint import must appear before mcp_endpoint blueprint import."""
+        home_pos = self._SRC.index("blueprints.homepage")
+        mcp_pos = self._SRC.index("blueprints.mcp_endpoint")
+        assert home_pos < mcp_pos, (
+            "homepage blueprint must be registered before mcp_endpoint blueprint"
         )
 
 
@@ -162,12 +177,11 @@ class TestGracefulDegradationStructure:
 
 class TestStartupLogs:
     def test_success_log_calls_use_info(self):
-        """Successful registration messages must use logger.info (single-arg or f-string)."""
+        """Successful registration messages must use logger.info."""
         src = inspect.getsource(function_app)
         info_calls = re.findall(r'logger\.info\("([^"]+)"', src)
         assert info_calls, "expected logger.info calls in function_app"
         for msg in info_calls:
-            # Confirm no newlines in format strings
             assert "\n" not in msg, f"INFO format string must be single-line: {msg!r}"
 
     def test_loading_banner_present_in_source(self):
@@ -177,3 +191,4 @@ class TestStartupLogs:
     def test_loaded_successfully_present_in_source(self):
         src = inspect.getsource(function_app)
         assert "loaded successfully" in src
+

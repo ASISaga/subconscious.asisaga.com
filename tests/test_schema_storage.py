@@ -1,8 +1,8 @@
-"""Tests for subconscious.schema_storage — schema definition serving and context persistence."""
+"""Tests for storage.schemas — schema definition serving and context persistence."""
 
 from __future__ import annotations
 
-from subconscious import schema_storage
+from storage import schemas as schema_storage
 
 
 class TestSchemaRegistry:

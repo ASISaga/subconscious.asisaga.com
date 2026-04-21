@@ -1,8 +1,8 @@
-"""Tests for subconscious.templates — HTML5/CSS3 page templates."""
+"""Tests for templates — HTML5/CSS3 page templates."""
 
 from __future__ import annotations
 
-from subconscious.templates import conversations_page, monitor_page
+from templates import conversations_page, monitor_page
 
 
 class TestConversationsPage:
