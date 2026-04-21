@@ -1,0 +1,83 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://asisaga.com/vocab/integrity#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "agent": "https://asisaga.com/agents/",
+
+    "IntegrityRegister": {
+      "@id": "https://asisaga.com/vocab/integrity#IntegrityRegister"
+    },
+    "WordGiven": {
+      "@id": "https://asisaga.com/vocab/integrity#WordGiven"
+    },
+    "IntegrityCleanup": {
+      "@id": "https://asisaga.com/vocab/integrity#IntegrityCleanup"
+    },
+
+    "role": {
+      "@id": "schema:jobTitle",
+      "@type": "xsd:string"
+    },
+    "legend": {
+      "@id": "https://asisaga.com/vocab/integrity#legend",
+      "@type": "xsd:string"
+    },
+    "erhard_principle": {
+      "@id": "https://asisaga.com/vocab/integrity#erhardPrinciple",
+      "@type": "xsd:string"
+    },
+    "words_given": {
+      "@id": "https://asisaga.com/vocab/integrity#wordsGiven",
+      "@container": "@list"
+    },
+    "wordId": {
+      "@id": "schema:identifier",
+      "@type": "xsd:string"
+    },
+    "name": {
+      "@id": "schema:name",
+      "@type": "xsd:string"
+    },
+    "word": {
+      "@id": "https://asisaga.com/vocab/integrity#word",
+      "@type": "xsd:string"
+    },
+    "by_when": {
+      "@id": "schema:endDate",
+      "@type": "xsd:string"
+    },
+    "honoring_looks_like": {
+      "@id": "https://asisaga.com/vocab/integrity#honoringLooksLike",
+      "@type": "xsd:string"
+    },
+    "word_status": {
+      "@id": "https://asisaga.com/vocab/integrity#wordStatus",
+      "@type": "xsd:string"
+    },
+    "cleanup": {
+      "@id": "https://asisaga.com/vocab/integrity#cleanup"
+    },
+    "acknowledged": {
+      "@id": "https://asisaga.com/vocab/integrity#acknowledged",
+      "@type": "xsd:string"
+    },
+    "amends": {
+      "@id": "https://asisaga.com/vocab/integrity#amends",
+      "@type": "xsd:string"
+    },
+    "revised_word": {
+      "@id": "https://asisaga.com/vocab/integrity#revisedWord",
+      "@type": "xsd:string"
+    },
+    "revised_by_when": {
+      "@id": "https://asisaga.com/vocab/integrity#revisedByWhen",
+      "@type": "xsd:string"
+    },
+    "planner_task_id": {
+      "@id": "https://asisaga.com/vocab/integrity#plannerTaskId",
+      "@type": "xsd:string"
+    }
+  }
+}

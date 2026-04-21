@@ -1,8 +1,8 @@
 """JSON-LD responsibility file loader for the Planner integration.
 
 Reads the structured responsibility JSON-LD files produced by PR #35
-from ``boardroom/mind/{agent_id}/Responsibilities/`` and returns them
-as plain Python dataclasses for consumption by :mod:`~business_infinity.planner.sync`.
+from ``mind/{agent_id}/Responsibilities/`` and returns them
+as plain Python dataclasses for consumption by :mod:`~planner.sync`.
 """
 
 from __future__ import annotations
@@ -13,14 +13,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from business_infinity._paths import PROJECT_ROOT
-
 logger = logging.getLogger(__name__)
 
 __all__ = ["Responsibility", "ResponsibilitiesLoader", "RoleResponsibilities"]
 
-# Canonical path to boardroom mind directory relative to project root.
-_MIND_DIR = PROJECT_ROOT / "boardroom" / "mind"
+# Canonical path to mind directory relative to this file.
+_MIND_DIR = Path(__file__).parent.parent / "mind"
 
 # Dimension slug → JSON-LD "dimension" value mapping
 _DIMENSION_FILE_NAMES = {
