@@ -308,3 +308,20 @@ def list_schema_contexts(
         ``updated_at``.
     """
     return schema_storage.list_schema_contexts(schema_name)
+
+
+@mcp.tool()
+def initialize_schema_contexts(
+    force: bool = False,
+) -> dict[str, Any]:
+    """Initialize schema-context rows from files in the repository mind directory.
+
+    Args:
+        force: When ``True``, writes mind data even if rows already exist.
+            Default ``False`` performs one-time bootstrap only when the table
+            is empty.
+
+    Returns:
+        Initialization result with status, seeded row count, and source path.
+    """
+    return schema_storage.initialize_schema_contexts_from_mind(force=force)

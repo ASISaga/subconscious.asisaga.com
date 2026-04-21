@@ -41,6 +41,7 @@ from azure.data.tables import TableServiceClient
 logger = logging.getLogger(__name__)
 
 SCHEMA_CONTEXTS_TABLE = "SchemaContexts"
+_SKIP_MIND_DIRS = {"collective"}
 
 # ---------------------------------------------------------------------------
 # Schema registry — maps canonical name → filename in boardroom/mind/schemas/
@@ -81,6 +82,14 @@ def _demo_schema_contexts_dir() -> Path:
     if override:
         return Path(override) / "schema_contexts"
     return Path(__file__).parent.parent / "data" / "schema_contexts"
+
+
+def _mind_dir() -> Path:
+    """Resolve the canonical mind directory used for storage initialization."""
+    override = os.environ.get("MIND_DIR")
+    if override:
+        return Path(override)
+    return Path(__file__).parent.parent / "mind"
 
 
 def _load_demo_schema_context(schema_name: str, context_id: str) -> dict[str, Any] | None:
@@ -229,6 +238,139 @@ def _schema_contexts_client():
     return svc.get_table_client(SCHEMA_CONTEXTS_TABLE)
 
 
+def _schema_contexts_empty(client: Any) -> bool:
+    """Return ``True`` when the SchemaContexts table has no rows."""
+    entities = client.query_entities("PartitionKey ne ''")
+    return next(iter(entities), None) is None
+
+
+def _load_json_file(path: Path) -> dict[str, Any] | None:
+    """Load a JSON/JSON-LD file and return its dict payload."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Failed loading mind seed file %s: %s", path, exc)
+        return None
+    if not isinstance(payload, dict):
+        logger.warning("Skipping non-object mind seed file %s", path)
+        return None
+    return payload
+
+
+def _first_existing_path(candidates: list[Path]) -> Path | None:
+    """Return first existing path from *candidates*, else ``None``."""
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _collect_mind_seed_records(mind_dir: Path) -> list[dict[str, Any]]:
+    """Collect bootstrap schema-context records from the mind directory."""
+    records: list[dict[str, Any]] = []
+    if not mind_dir.is_dir():
+        return records
+    for agent_dir in sorted(p for p in mind_dir.iterdir() if p.is_dir()):
+        agent_id = agent_dir.name
+        if agent_id in _SKIP_MIND_DIRS:
+            # Collective files represent shared boardroom state, not per-agent
+            # schema contexts keyed by a single agent identifier.
+            continue
+
+        direct_files: list[tuple[str, Path | None]] = [
+            (
+                "manas",
+                _first_existing_path([
+                    agent_dir / "manas" / f"{agent_id}.jsonld",
+                    agent_dir / "Manas" / f"{agent_id}.jsonld",
+                ]),
+            ),
+            (
+                "buddhi",
+                _first_existing_path([
+                    agent_dir / "buddhi" / "buddhi.jsonld",
+                    agent_dir / "Buddhi" / "buddhi.jsonld",
+                ]),
+            ),
+            (
+                "action-plan",
+                _first_existing_path([
+                    agent_dir / "buddhi" / "action-plan.jsonld",
+                    agent_dir / "Buddhi" / "action-plan.jsonld",
+                ]),
+            ),
+            (
+                "ahankara",
+                _first_existing_path([
+                    agent_dir / "ahankara" / "ahankara.jsonld",
+                    agent_dir / "Ahankara" / "ahankara.jsonld",
+                ]),
+            ),
+            (
+                "chitta",
+                _first_existing_path([
+                    agent_dir / "chitta" / "chitta.jsonld",
+                    agent_dir / "Chitta" / "chitta.jsonld",
+                ]),
+            ),
+            (
+                "integrity",
+                _first_existing_path([
+                    agent_dir / "integrity" / "integrity.jsonld",
+                    agent_dir / "Integrity" / "integrity.jsonld",
+                ]),
+            ),
+        ]
+        for schema_name, path in direct_files:
+            if path is None:
+                continue
+            payload = _load_json_file(path)
+            if payload is None:
+                continue
+            records.append({
+                "schema_name": schema_name,
+                "context_id": agent_id,
+                "data": payload,
+            })
+
+        responsibilities_dir = _first_existing_path(
+            [agent_dir / "responsibilities", agent_dir / "Responsibilities"]
+        )
+        if responsibilities_dir and responsibilities_dir.is_dir():
+            for path in sorted(responsibilities_dir.glob("*.jsonld")):
+                payload = _load_json_file(path)
+                if payload is None:
+                    continue
+                context_key = f"{agent_id}/{path.stem}"
+                records.append({
+                    "schema_name": "responsibilities",
+                    "context_id": context_key,
+                    "data": payload,
+                })
+
+        for schema_name, relative in (
+            ("entity-context", ("manas", "context")),
+            ("entity-content", ("manas", "content")),
+        ):
+            folder = _first_existing_path([
+                agent_dir.joinpath(*relative),
+                agent_dir.joinpath(*[part.capitalize() for part in relative]),
+            ])
+            if folder is None or not folder.is_dir():
+                continue
+            for path in sorted(folder.glob("*.jsonld")):
+                payload = _load_json_file(path)
+                if payload is None:
+                    continue
+                context_key = f"{agent_id}/{path.stem}"
+                records.append({
+                    "schema_name": schema_name,
+                    "context_id": context_key,
+                    "data": payload,
+                })
+    return records
+
+
 # ---------------------------------------------------------------------------
 # Schema context CRUD (Azure Table Storage–backed, with demo-data fallback)
 # ---------------------------------------------------------------------------
@@ -318,3 +460,49 @@ def list_schema_contexts(
         }
         for e in entities
     ]
+
+
+def initialize_schema_contexts_from_mind(force: bool = False) -> dict[str, Any]:
+    """Initialize SchemaContexts rows from the repository ``mind`` directory.
+
+    Initialization is intended as a one-time bootstrap. By default, the process
+    is skipped when the table already contains records. Set ``force=True`` to
+    overwrite existing rows with the latest file payloads.
+    """
+    if _use_demo_data():
+        return {
+            "initialized": False,
+            "reason": "demo-mode",
+            "seeded": 0,
+            "mind_dir": str(_mind_dir()),
+        }
+
+    client = _schema_contexts_client()
+    if not force and not _schema_contexts_empty(client):
+        return {
+            "initialized": False,
+            "reason": "table-not-empty",
+            "seeded": 0,
+            "mind_dir": str(_mind_dir()),
+        }
+
+    mind_dir = _mind_dir()
+    records = _collect_mind_seed_records(mind_dir)
+    now_iso = datetime.now(UTC).isoformat()
+    for record in records:
+        entity = {
+            "PartitionKey": record["schema_name"],
+            "RowKey": record["context_id"],
+            "Content": json.dumps(record["data"], ensure_ascii=False),
+            "UpdatedAt": now_iso,
+        }
+        client.upsert_entity(entity)
+
+    logger.info("Initialized schema contexts from mind directory: %d rows", len(records))
+    return {
+        "initialized": True,
+        "reason": "ok",
+        "seeded": len(records),
+        "mind_dir": str(mind_dir),
+        "force": force,
+    }

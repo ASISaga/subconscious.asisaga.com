@@ -33,6 +33,7 @@ class TestMCPToolRegistration:
             "store_schema_context",
             "get_schema_context",
             "list_schema_contexts",
+            "initialize_schema_contexts",
         }
         tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
         tool_names = {t.name for t in tools}
@@ -276,6 +277,15 @@ class TestMCPSchemaTools:
             mcp.call_tool("list_schema_contexts", {"schema_name": "chitta"})
         )
         assert result is not None
+
+    def test_initialize_schema_contexts_tool(self):
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("initialize_schema_contexts", {})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "initialized" in payload
+        assert "reason" in payload
+        assert "seeded" in payload
 
 
 class TestMCPResourceExecution:
