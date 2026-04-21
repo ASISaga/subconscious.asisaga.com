@@ -400,150 +400,485 @@ def initialize_schema_contexts(
 
 
 # ---------------------------------------------------------------------------
-# MCP Tools — CXO agent state (read/write atomic mind states by agent ID)
+# MCP Tools — CXO agent state (read/write atomic mind states by semantic layer)
+# ---------------------------------------------------------------------------
+#
+# Each of the four primary mind layers — Chitta, Ahankara, Buddhi, and Manas —
+# has a dedicated get/set pair.  Sub-dimensions of Manas (action-plan, entity
+# content/context perspectives, responsibilities, and integrity) also have
+# dedicated tools.  All tools accept an optional ``company_id`` for
+# multi-company/product scoping.
 # ---------------------------------------------------------------------------
 
+
+def _missing_state_error(agent_id: str, layer: str, company_id: str | None) -> dict[str, Any]:
+    """Return a consistent error dict for a missing mind-state row."""
+    suffix = f" (company '{company_id}')" if company_id else ""
+    return {"error": f"No {layer} state found for agent '{agent_id}'{suffix}"}
+
+
+# ── Chitta — pure intelligence ───────────────────────────────────────────────
+
 @mcp.tool()
-def get_agent_state(
-    agent_id: str,
-    dimension: str,
-    company_id: str | None = None,
-) -> dict[str, Any]:
-    """Read an atomic mind-state file for a CXO agent by its unique ID reference.
+def get_chitta(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Chitta (pure intelligence) state for a CXO agent.
 
-    Each agent stores mind state across several dimensions.  This tool lets any
-    CXO read their own (or another agent's) state by supplying their unique
-    ``agent_id`` and the ``dimension`` path.
-
-    Supported *dimension* values:
-
-    * ``"manas"`` — working memory and active focus state
-    * ``"buddhi"`` — domain intellect document
-    * ``"action-plan"`` — Buddhi action-plan toward the company purpose
-    * ``"ahankara"`` — identity and ego document
-    * ``"chitta"`` — pure intelligence document
-    * ``"integrity"`` — integrity register
-    * ``"responsibilities/{name}"`` — role responsibilities (e.g.
-      ``"responsibilities/entrepreneur"``, ``"responsibilities/manager"``,
-      ``"responsibilities/domain-expert"``)
-    * ``"manas/content/{entity}"`` — mutable entity perspective (e.g.
-      ``"manas/content/company"``, ``"manas/content/business-infinity"``)
-    * ``"manas/context/{entity}"`` — immutable entity perspective
+    Chitta holds the agent's deepest, immutable intelligence — core values,
+    universal principles, and the highest level of consciousness.  It
+    conforms to the ``chitta`` JSON Schema (see ``get_schema("chitta")``).
 
     Args:
         agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
-        dimension: The dimension path (see above).
         company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
             for multi-company/product scaling.
 
     Returns:
-        The stored mind-state document, or an error dict if not found.
+        The stored Chitta document, or an error dict if not found.
     """
-    try:
-        schema_name, context_id = _resolve_dimension(agent_id, dimension)
-    except ValueError as exc:
-        return {"error": str(exc)}
-    result = schema_storage.get_schema_context(schema_name, context_id, company_id=company_id)
+    result = schema_storage.get_schema_context("chitta", agent_id, company_id=company_id)
     if result is None:
-        return {
-            "error": (
-                f"No state found for agent '{agent_id}' dimension '{dimension}'"
-                + (f" (company '{company_id}')" if company_id else "")
-            )
-        }
+        return _missing_state_error(agent_id, "Chitta", company_id)
     return result
 
 
-def _schema_name_for_dimension(dimension: str) -> str:
-    """Return the schema name that corresponds to *dimension*.
-
-    This is a schema-only variant of :func:`_resolve_dimension` — it discards
-    the context_id since schema lookup does not require an agent identifier.
-
-    Args:
-        dimension: The dimension path (e.g. ``"manas"``,
-            ``"responsibilities/entrepreneur"``).
-
-    Returns:
-        The canonical schema name string (e.g. ``"manas"``,
-        ``"responsibilities"``).
-
-    Raises:
-        ValueError: When *dimension* is not a recognised format.
-    """
-    # _resolve_dimension builds a context_id that includes the agent_id.  Since
-    # only the schema_name (index 0) matters here, an empty string is a valid
-    # sentinel for the agent_id parameter.
-    schema_name, _ = _resolve_dimension("", dimension)
-    return schema_name
-
-
 @mcp.tool()
-def get_dimension_schema(dimension: str) -> dict[str, Any]:
-    """Fetch the JSON Schema definition for a mind dimension by its dimension path.
-
-    CXOs use this tool to understand the semantics — field names, types, and
-    constraints — of any atomic mind-state file without needing to know the
-    internal schema name.  The *dimension* argument uses the same path format
-    accepted by :func:`get_agent_state` and :func:`set_agent_state`.
-
-    Supported *dimension* values:
-
-    * ``"manas"`` — working memory and active focus state
-    * ``"buddhi"`` — domain intellect document
-    * ``"action-plan"`` — Buddhi action-plan toward the company purpose
-    * ``"ahankara"`` — identity and ego document
-    * ``"chitta"`` — pure intelligence document
-    * ``"integrity"`` — integrity register
-    * ``"responsibilities/{name}"`` — role responsibilities (e.g.
-      ``"responsibilities/entrepreneur"``)
-    * ``"manas/content/{entity}"`` — mutable entity perspective
-    * ``"manas/context/{entity}"`` — immutable entity perspective
-
-    Args:
-        dimension: The dimension path (see above).
-
-    Returns:
-        The full JSON Schema object for the dimension, or an error dict if the
-        dimension is unrecognised or the schema file is not available.
-    """
-    try:
-        schema_name = _schema_name_for_dimension(dimension)
-    except ValueError as exc:
-        return {"error": str(exc)}
-    data = schema_storage.get_schema(schema_name)
-    if data is None:
-        return {"error": f"Schema for dimension '{dimension}' ('{schema_name}') not found"}
-    return data
-
-
-@mcp.tool()
-def set_agent_state(
+def set_chitta(
     agent_id: str,
-    dimension: str,
     data: dict[str, Any],
     company_id: str | None = None,
 ) -> dict[str, Any]:
-    """Write an atomic mind-state file for a CXO agent by its unique ID reference.
+    """Write the Chitta (pure intelligence) state for a CXO agent.
 
-    Persists *data* to the mind-state slot identified by ``agent_id`` +
-    ``dimension``.  See :func:`get_agent_state` for the list of valid dimension
-    values and their meanings.
+    Persists *data* as the agent's Chitta document conforming to the
+    ``chitta`` JSON Schema (see ``get_schema("chitta")``).
 
     Args:
         agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
-        dimension: The dimension path (e.g. ``"manas"``, ``"chitta"``,
-            ``"responsibilities/entrepreneur"``).
-        data: The JSON-LD document to persist.
+        data: The JSON-LD Chitta document to persist.
         company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
             for multi-company/product scaling.
 
     Returns:
-        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``,
-        or an error dict if the dimension is unrecognised.
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
     """
-    try:
-        schema_name, context_id = _resolve_dimension(agent_id, dimension)
-    except ValueError as exc:
-        return {"error": str(exc)}
-    return schema_storage.store_schema_context(schema_name, context_id, data, company_id=company_id)
+    return schema_storage.store_schema_context("chitta", agent_id, data, company_id=company_id)
+
+
+# ── Ahankara — identity and ego ──────────────────────────────────────────────
+
+@mcp.tool()
+def get_ahankara(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Ahankara (identity and ego) state for a CXO agent.
+
+    Ahankara defines the agent's sense of self — role identity, personal
+    mission, and the ego structure that shapes decision-making.  It conforms
+    to the ``ahankara`` JSON Schema (see ``get_schema("ahankara")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Ahankara document, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context("ahankara", agent_id, company_id=company_id)
+    if result is None:
+        return _missing_state_error(agent_id, "Ahankara", company_id)
+    return result
+
+
+@mcp.tool()
+def set_ahankara(
+    agent_id: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write the Ahankara (identity and ego) state for a CXO agent.
+
+    Persists *data* as the agent's Ahankara document conforming to the
+    ``ahankara`` JSON Schema (see ``get_schema("ahankara")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        data: The JSON-LD Ahankara document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context("ahankara", agent_id, data, company_id=company_id)
+
+
+# ── Buddhi — domain intellect ────────────────────────────────────────────────
+
+@mcp.tool()
+def get_buddhi(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Buddhi (domain intellect) state for a CXO agent.
+
+    Buddhi captures the agent's domain knowledge, reasoning frameworks, and
+    strategic intelligence — the discriminative faculty applied to the
+    agent's area of expertise.  It conforms to the ``buddhi`` JSON Schema
+    (see ``get_schema("buddhi")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Buddhi document, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context("buddhi", agent_id, company_id=company_id)
+    if result is None:
+        return _missing_state_error(agent_id, "Buddhi", company_id)
+    return result
+
+
+@mcp.tool()
+def set_buddhi(
+    agent_id: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write the Buddhi (domain intellect) state for a CXO agent.
+
+    Persists *data* as the agent's Buddhi document conforming to the
+    ``buddhi`` JSON Schema (see ``get_schema("buddhi")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        data: The JSON-LD Buddhi document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context("buddhi", agent_id, data, company_id=company_id)
+
+
+# ── Action Plan — Buddhi action plan ─────────────────────────────────────────
+
+@mcp.tool()
+def get_action_plan(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Action Plan state for a CXO agent.
+
+    The Action Plan is the agent's Buddhi-derived strategic plan toward the
+    company purpose — the concrete roadmap derived from domain intellect.
+    It conforms to the ``action-plan`` JSON Schema
+    (see ``get_schema("action-plan")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Action Plan document, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context("action-plan", agent_id, company_id=company_id)
+    if result is None:
+        return _missing_state_error(agent_id, "Action Plan", company_id)
+    return result
+
+
+@mcp.tool()
+def set_action_plan(
+    agent_id: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write the Action Plan state for a CXO agent.
+
+    Persists *data* as the agent's Action Plan document conforming to the
+    ``action-plan`` JSON Schema (see ``get_schema("action-plan")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        data: The JSON-LD Action Plan document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context("action-plan", agent_id, data, company_id=company_id)
+
+
+# ── Manas — working memory and active focus ───────────────────────────────────
+
+@mcp.tool()
+def get_manas(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Manas (working memory and active focus) state for a CXO agent.
+
+    Manas is the agent's active working mind — current focus, open tasks,
+    and in-progress deliberations.  It conforms to the ``manas`` JSON Schema
+    (see ``get_schema("manas")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Manas document, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context("manas", agent_id, company_id=company_id)
+    if result is None:
+        return _missing_state_error(agent_id, "Manas", company_id)
+    return result
+
+
+@mcp.tool()
+def set_manas(
+    agent_id: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write the Manas (working memory and active focus) state for a CXO agent.
+
+    Persists *data* as the agent's Manas document conforming to the
+    ``manas`` JSON Schema (see ``get_schema("manas")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        data: The JSON-LD Manas document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context("manas", agent_id, data, company_id=company_id)
+
+
+# ── Integrity — integrity register ───────────────────────────────────────────
+
+@mcp.tool()
+def get_integrity(agent_id: str, company_id: str | None = None) -> dict[str, Any]:
+    """Read the Integrity register for a CXO agent.
+
+    The Integrity register records the agent's commitments, value alignment
+    history, and integrity assessments.  It conforms to the ``integrity``
+    JSON Schema (see ``get_schema("integrity")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Integrity document, or an error dict if not found.
+    """
+    result = schema_storage.get_schema_context("integrity", agent_id, company_id=company_id)
+    if result is None:
+        return _missing_state_error(agent_id, "Integrity", company_id)
+    return result
+
+
+@mcp.tool()
+def set_integrity(
+    agent_id: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write the Integrity register for a CXO agent.
+
+    Persists *data* as the agent's Integrity document conforming to the
+    ``integrity`` JSON Schema (see ``get_schema("integrity")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        data: The JSON-LD Integrity document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    return schema_storage.store_schema_context("integrity", agent_id, data, company_id=company_id)
+
+
+# ── Responsibilities — role responsibilities ──────────────────────────────────
+
+@mcp.tool()
+def get_responsibilities(
+    agent_id: str,
+    role: str,
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Read a role-responsibilities document for a CXO agent.
+
+    Each agent carries responsibility documents for each of their active
+    roles — typically ``"entrepreneur"``, ``"manager"``, and
+    ``"domain-expert"``.  The document conforms to the
+    ``responsibilities`` JSON Schema (see ``get_schema("responsibilities")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        role: The role name (e.g. ``"entrepreneur"``, ``"manager"``,
+            ``"domain-expert"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored Responsibilities document, or an error dict if not found.
+    """
+    context_id = f"{agent_id}/{role}"
+    result = schema_storage.get_schema_context("responsibilities", context_id, company_id=company_id)
+    if result is None:
+        suffix = f" (company '{company_id}')" if company_id else ""
+        return {"error": f"No Responsibilities state found for agent '{agent_id}' role '{role}'{suffix}"}
+    return result
+
+
+@mcp.tool()
+def set_responsibilities(
+    agent_id: str,
+    role: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write a role-responsibilities document for a CXO agent.
+
+    Persists *data* as the agent's responsibilities for *role*, conforming
+    to the ``responsibilities`` JSON Schema
+    (see ``get_schema("responsibilities")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        role: The role name (e.g. ``"entrepreneur"``, ``"manager"``,
+            ``"domain-expert"``).
+        data: The JSON-LD Responsibilities document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    context_id = f"{agent_id}/{role}"
+    return schema_storage.store_schema_context("responsibilities", context_id, data, company_id=company_id)
+
+
+# ── Entity content — mutable entity perspective (Manas) ──────────────────────
+
+@mcp.tool()
+def get_entity_content(
+    agent_id: str,
+    entity: str,
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Read a mutable entity content perspective from an agent's Manas.
+
+    Entity content perspectives capture the agent's current, mutable view
+    of a specific entity (e.g. ``"company"``, ``"business-infinity"``).
+    They conforms to the ``entity-content`` JSON Schema
+    (see ``get_schema("entity-content")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        entity: The entity identifier (e.g. ``"company"``,
+            ``"business-infinity"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored entity content document, or an error dict if not found.
+    """
+    context_id = f"{agent_id}/{entity}"
+    result = schema_storage.get_schema_context("entity-content", context_id, company_id=company_id)
+    if result is None:
+        suffix = f" (company '{company_id}')" if company_id else ""
+        return {"error": f"No entity content state found for agent '{agent_id}' entity '{entity}'{suffix}"}
+    return result
+
+
+@mcp.tool()
+def set_entity_content(
+    agent_id: str,
+    entity: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write a mutable entity content perspective into an agent's Manas.
+
+    Persists *data* as the agent's mutable perspective on *entity*,
+    conforming to the ``entity-content`` JSON Schema
+    (see ``get_schema("entity-content")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        entity: The entity identifier (e.g. ``"company"``,
+            ``"business-infinity"``).
+        data: The JSON-LD entity content document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    context_id = f"{agent_id}/{entity}"
+    return schema_storage.store_schema_context("entity-content", context_id, data, company_id=company_id)
+
+
+# ── Entity context — immutable entity perspective (Manas) ────────────────────
+
+@mcp.tool()
+def get_entity_context(
+    agent_id: str,
+    entity: str,
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Read an immutable entity context perspective from an agent's Manas.
+
+    Entity context perspectives capture the agent's stable, immutable
+    understanding of a specific entity (e.g. ``"company"``,
+    ``"business-infinity"``).  They conform to the ``entity-context`` JSON
+    Schema (see ``get_schema("entity-context")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        entity: The entity identifier (e.g. ``"company"``,
+            ``"business-infinity"``).
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        The stored entity context document, or an error dict if not found.
+    """
+    context_id = f"{agent_id}/{entity}"
+    result = schema_storage.get_schema_context("entity-context", context_id, company_id=company_id)
+    if result is None:
+        suffix = f" (company '{company_id}')" if company_id else ""
+        return {"error": f"No entity context state found for agent '{agent_id}' entity '{entity}'{suffix}"}
+    return result
+
+
+@mcp.tool()
+def set_entity_context(
+    agent_id: str,
+    entity: str,
+    data: dict[str, Any],
+    company_id: str | None = None,
+) -> dict[str, Any]:
+    """Write an immutable entity context perspective into an agent's Manas.
+
+    Persists *data* as the agent's immutable understanding of *entity*,
+    conforming to the ``entity-context`` JSON Schema
+    (see ``get_schema("entity-context")``).
+
+    Args:
+        agent_id: Unique CXO agent identifier (e.g. ``"ceo"``, ``"cfo"``).
+        entity: The entity identifier (e.g. ``"company"``,
+            ``"business-infinity"``).
+        data: The JSON-LD entity context document to persist.
+        company_id: Optional company scope (e.g. ``"asisaga"``).  Provision
+            for multi-company/product scaling.
+
+    Returns:
+        Confirmation with ``schema_name``, ``context_id``, and ``updated_at``.
+    """
+    context_id = f"{agent_id}/{entity}"
+    return schema_storage.store_schema_context("entity-context", context_id, data, company_id=company_id)

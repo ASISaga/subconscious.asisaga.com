@@ -34,13 +34,28 @@ class TestMCPToolRegistration:
             "get_schema_context",
             "list_schema_contexts",
             "initialize_schema_contexts",
-            "get_agent_state",
-            "set_agent_state",
-            "get_dimension_schema",
+            # dedicated semantic mind-layer tools
+            "get_chitta", "set_chitta",
+            "get_ahankara", "set_ahankara",
+            "get_buddhi", "set_buddhi",
+            "get_action_plan", "set_action_plan",
+            "get_manas", "set_manas",
+            "get_integrity", "set_integrity",
+            "get_responsibilities", "set_responsibilities",
+            "get_entity_content", "set_entity_content",
+            "get_entity_context", "set_entity_context",
         }
         tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
         tool_names = {t.name for t in tools}
         assert expected.issubset(tool_names), f"Missing schema tools: {expected - tool_names}"
+
+    def test_generic_dimension_tools_removed(self):
+        """Verify the generic-dimension tools are no longer registered."""
+        tools = asyncio.get_event_loop().run_until_complete(mcp.list_tools())
+        tool_names = {t.name for t in tools}
+        assert "get_agent_state" not in tool_names
+        assert "set_agent_state" not in tool_names
+        assert "get_dimension_schema" not in tool_names
 
     def test_mcp_apps_tools_registered(self):
         """show_conversations is a model-visible @mcp.tool(); fetch_* are app-internal."""
@@ -365,44 +380,107 @@ class TestMCPResourceExecution:
         assert "error" in data
 
 
-class TestAgentStateTools:
-    """get_agent_state / set_agent_state MCP tools."""
 
-    def test_set_and_get_direct_dimension(self, schemas_dir):
-        """set_agent_state + get_agent_state round-trip for a direct dimension."""
+class TestDedicatedMindLayerTools:
+    """Dedicated semantic MCP tools — one get/set pair per mind layer."""
+
+    # ── Four primary mind layers ──────────────────────────────────────────────
+
+    def test_chitta_round_trip(self, schemas_dir):
+        """set_chitta + get_chitta persist and retrieve correctly."""
         doc = {"@type": "Chitta", "agent_id": "cfo"}
         asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("set_agent_state", {
-                "agent_id": "cfo",
-                "dimension": "chitta",
-                "data": doc,
-            })
+            mcp.call_tool("set_chitta", {"agent_id": "cfo", "data": doc})
         )
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
-                "agent_id": "cfo",
-                "dimension": "chitta",
-            })
+            mcp.call_tool("get_chitta", {"agent_id": "cfo"})
         )
         payload = json.loads(result.content[0].text)
         assert payload["data"] == doc
         assert payload["context_id"] == "cfo"
         assert payload["schema_name"] == "chitta"
 
-    def test_set_and_get_responsibilities_dimension(self, schemas_dir):
-        """Compound responsibility dimension resolves correctly."""
-        doc = {"@type": "RoleResponsibilities", "dimension": "Entrepreneur"}
+    def test_ahankara_round_trip(self, schemas_dir):
+        """set_ahankara + get_ahankara persist and retrieve correctly."""
+        doc = {"@type": "Ahankara", "identity": "Visionary"}
         asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("set_agent_state", {
+            mcp.call_tool("set_ahankara", {"agent_id": "ceo", "data": doc})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_ahankara", {"agent_id": "ceo"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["data"] == doc
+        assert payload["schema_name"] == "ahankara"
+
+    def test_buddhi_round_trip(self, schemas_dir):
+        """set_buddhi + get_buddhi persist and retrieve correctly."""
+        doc = {"@type": "Buddhi", "domain": "finance"}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_buddhi", {"agent_id": "cfo", "data": doc})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_buddhi", {"agent_id": "cfo"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["data"] == doc
+        assert payload["schema_name"] == "buddhi"
+
+    def test_manas_round_trip(self, schemas_dir):
+        """set_manas + get_manas persist and retrieve correctly."""
+        doc = {"@type": "Manas", "focus": "Q2 planning"}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_manas", {"agent_id": "cto", "data": doc})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_manas", {"agent_id": "cto"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["data"] == doc
+        assert payload["schema_name"] == "manas"
+
+    # ── Supporting mind layers ────────────────────────────────────────────────
+
+    def test_action_plan_round_trip(self, schemas_dir):
+        """set_action_plan + get_action_plan persist and retrieve correctly."""
+        doc = {"@type": "ActionPlan", "goals": ["launch product"]}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_action_plan", {"agent_id": "ceo", "data": doc})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_action_plan", {"agent_id": "ceo"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["data"] == doc
+        assert payload["schema_name"] == "action-plan"
+
+    def test_integrity_round_trip(self, schemas_dir):
+        """set_integrity + get_integrity persist and retrieve correctly."""
+        doc = {"@type": "Integrity", "score": 0.95}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_integrity", {"agent_id": "coo", "data": doc})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_integrity", {"agent_id": "coo"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["data"] == doc
+        assert payload["schema_name"] == "integrity"
+
+    def test_responsibilities_round_trip(self, schemas_dir):
+        """set_responsibilities + get_responsibilities persist and retrieve correctly."""
+        doc = {"@type": "RoleResponsibilities", "role": "Entrepreneur"}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_responsibilities", {
                 "agent_id": "ceo",
-                "dimension": "responsibilities/entrepreneur",
+                "role": "entrepreneur",
                 "data": doc,
             })
         )
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
+            mcp.call_tool("get_responsibilities", {
                 "agent_id": "ceo",
-                "dimension": "responsibilities/entrepreneur",
+                "role": "entrepreneur",
             })
         )
         payload = json.loads(result.content[0].text)
@@ -410,20 +488,20 @@ class TestAgentStateTools:
         assert payload["schema_name"] == "responsibilities"
         assert payload["context_id"] == "ceo/entrepreneur"
 
-    def test_set_and_get_entity_content_dimension(self, schemas_dir):
-        """Mutable entity perspective (manas/content) resolves correctly."""
+    def test_entity_content_round_trip(self, schemas_dir):
+        """set_entity_content + get_entity_content persist and retrieve correctly."""
         doc = {"@type": "SagaEntity", "current_signals": ["signal-1"]}
         asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("set_agent_state", {
+            mcp.call_tool("set_entity_content", {
                 "agent_id": "cmo",
-                "dimension": "manas/content/company",
+                "entity": "company",
                 "data": doc,
             })
         )
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
+            mcp.call_tool("get_entity_content", {
                 "agent_id": "cmo",
-                "dimension": "manas/content/company",
+                "entity": "company",
             })
         )
         payload = json.loads(result.content[0].text)
@@ -431,155 +509,72 @@ class TestAgentStateTools:
         assert payload["schema_name"] == "entity-content"
         assert payload["context_id"] == "cmo/company"
 
-    def test_get_agent_state_not_found(self, schemas_dir):
-        """get_agent_state returns error dict when state does not exist."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
-                "agent_id": "ghost",
-                "dimension": "manas",
-            })
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" in payload
-
-    def test_get_agent_state_unknown_dimension(self, schemas_dir):
-        """get_agent_state returns error dict for unrecognised dimension."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
-                "agent_id": "ceo",
-                "dimension": "unknowndimension",
-            })
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" in payload
-
-    def test_set_agent_state_unknown_dimension(self, schemas_dir):
-        """set_agent_state returns error dict for unrecognised dimension."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("set_agent_state", {
-                "agent_id": "ceo",
-                "dimension": "unknowndimension",
-                "data": {},
-            })
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" in payload
-
-    def test_set_and_get_with_company_id(self, schemas_dir):
-        """company_id scoping is propagated through set/get agent state tools."""
-        doc = {"@type": "Manas", "scoped": True}
+    def test_entity_context_round_trip(self, schemas_dir):
+        """set_entity_context + get_entity_context persist and retrieve correctly."""
+        doc = {"@type": "SagaEntity", "stable_definition": "immutable truth"}
         asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("set_agent_state", {
-                "agent_id": "ceo",
-                "dimension": "manas",
+            mcp.call_tool("set_entity_context", {
+                "agent_id": "cso",
+                "entity": "business-infinity",
                 "data": doc,
-                "company_id": "asisaga",
             })
         )
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
-                "agent_id": "ceo",
-                "dimension": "manas",
-                "company_id": "asisaga",
+            mcp.call_tool("get_entity_context", {
+                "agent_id": "cso",
+                "entity": "business-infinity",
             })
         )
         payload = json.loads(result.content[0].text)
         assert payload["data"] == doc
+        assert payload["schema_name"] == "entity-context"
+        assert payload["context_id"] == "cso/business-infinity"
 
-        # Without company_id the scoped row is not accessible
-        miss = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_agent_state", {
-                "agent_id": "ceo",
-                "dimension": "manas",
-            })
-        )
-        miss_payload = json.loads(miss.content[0].text)
-        assert "error" in miss_payload
+    # ── Not-found errors ──────────────────────────────────────────────────────
 
-
-class TestGetDimensionSchema:
-    """get_dimension_schema — fetch the JSON Schema for a mind dimension by path."""
-
-    def test_direct_dimension_returns_schema(self, schemas_dir):
-        """A direct dimension path (e.g. 'manas') returns the correct JSON Schema."""
+    def test_get_chitta_not_found(self, schemas_dir):
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "manas"})
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" not in payload
-        assert payload["title"] == "Manas — Agent Memory State"
-
-    def test_all_direct_dimensions_return_schemas(self, schemas_dir):
-        """Every supported direct dimension resolves to a valid schema."""
-        for dimension in ("manas", "buddhi", "action-plan", "ahankara", "chitta", "integrity"):
-            result = asyncio.get_event_loop().run_until_complete(
-                mcp.call_tool("get_dimension_schema", {"dimension": dimension})
-            )
-            payload = json.loads(result.content[0].text)
-            assert "error" not in payload, f"Expected schema for dimension '{dimension}'"
-            assert "title" in payload
-
-    def test_all_prefix_dimensions_return_schemas(self, schemas_dir):
-        """Every supported prefix-based dimension resolves to a valid schema."""
-        prefix_cases = [
-            ("responsibilities/entrepreneur", "RoleResponsibilities"),
-            ("responsibilities/manager", "RoleResponsibilities"),
-            ("responsibilities/domain-expert", "RoleResponsibilities"),
-            ("manas/content/company", "Entity Content Perspective — Mutable"),
-            ("manas/content/business-infinity", "Entity Content Perspective — Mutable"),
-            ("manas/context/company", "Entity Context Perspective — Immutable"),
-            ("manas/context/business-infinity", "Entity Context Perspective — Immutable"),
-        ]
-        for dimension, expected_title in prefix_cases:
-            result = asyncio.get_event_loop().run_until_complete(
-                mcp.call_tool("get_dimension_schema", {"dimension": dimension})
-            )
-            payload = json.loads(result.content[0].text)
-            assert "error" not in payload, f"Expected schema for dimension '{dimension}'"
-            assert payload["title"] == expected_title, (
-                f"Dimension '{dimension}': expected title '{expected_title}', got '{payload.get('title')}'"
-            )
-
-    def test_prefix_dimension_responsibilities(self, schemas_dir):
-        """A prefix dimension path resolves to the responsibilities schema."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "responsibilities/entrepreneur"})
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" not in payload
-        assert payload["title"] == "RoleResponsibilities"
-
-    def test_prefix_dimension_entity_content(self, schemas_dir):
-        """manas/content/{entity} resolves to the entity-content schema."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "manas/content/company"})
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" not in payload
-        assert payload["title"] == "Entity Content Perspective — Mutable"
-
-    def test_prefix_dimension_entity_context(self, schemas_dir):
-        """manas/context/{entity} resolves to the entity-context schema."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "manas/context/business-infinity"})
-        )
-        payload = json.loads(result.content[0].text)
-        assert "error" not in payload
-        assert payload["title"] == "Entity Context Perspective — Immutable"
-
-    def test_unknown_dimension_returns_error(self, schemas_dir):
-        """An unrecognised dimension path returns an error dict."""
-        result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "unknowndimension"})
+            mcp.call_tool("get_chitta", {"agent_id": "ghost"})
         )
         payload = json.loads(result.content[0].text)
         assert "error" in payload
 
-    def test_schema_contains_type_field(self, schemas_dir):
-        """Returned schema includes the 'type' field (standard JSON Schema)."""
+    def test_get_responsibilities_not_found(self, schemas_dir):
         result = asyncio.get_event_loop().run_until_complete(
-            mcp.call_tool("get_dimension_schema", {"dimension": "chitta"})
+            mcp.call_tool("get_responsibilities", {"agent_id": "ghost", "role": "entrepreneur"})
         )
         payload = json.loads(result.content[0].text)
-        assert payload.get("type") == "object"
+        assert "error" in payload
 
+    def test_get_entity_content_not_found(self, schemas_dir):
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_entity_content", {"agent_id": "ghost", "entity": "company"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" in payload
+
+    def test_get_entity_context_not_found(self, schemas_dir):
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_entity_context", {"agent_id": "ghost", "entity": "company"})
+        )
+        payload = json.loads(result.content[0].text)
+        assert "error" in payload
+
+    # ── company_id scoping ────────────────────────────────────────────────────
+
+    def test_company_id_scoping(self, schemas_dir):
+        """company_id scoping is propagated correctly through the semantic tools."""
+        doc = {"@type": "Manas", "scoped": True}
+        asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("set_manas", {"agent_id": "ceo", "data": doc, "company_id": "asisaga"})
+        )
+        result = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_manas", {"agent_id": "ceo", "company_id": "asisaga"})
+        )
+        assert json.loads(result.content[0].text)["data"] == doc
+
+        # Unscoped read must miss the scoped row
+        miss = asyncio.get_event_loop().run_until_complete(
+            mcp.call_tool("get_manas", {"agent_id": "ceo"})
+        )
+        assert "error" in json.loads(miss.content[0].text)

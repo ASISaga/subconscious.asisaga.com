@@ -64,8 +64,11 @@ def agent_mind_resource(agent_id: str, dimension: str) -> str:
     * ``mind://coo/responsibilities/manager`` — COO's manager responsibilities
     * ``mind://cmo/manas/content/company`` — CMO's mutable company perspective
 
-    See :func:`server.tools.get_agent_state` for the full list of dimension
-    formats.
+    For interactive read/write operations use the dedicated semantic MCP tools:
+    ``get_chitta``, ``get_ahankara``, ``get_buddhi``, ``get_manas``,
+    ``get_action_plan``, ``get_integrity``, ``get_responsibilities``,
+    ``get_entity_content``, ``get_entity_context`` (and the corresponding
+    ``set_*`` variants).
 
     Args:
         agent_id: Unique CXO agent identifier (e.g. ``"ceo"``).
