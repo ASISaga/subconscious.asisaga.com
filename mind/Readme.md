@@ -203,8 +203,15 @@ mind/
 All MCP tools that read/write schema contexts accept an optional **`company_id`**
 parameter:
 
-* `get_agent_state(agent_id, dimension, company_id=None)` — read a CXO's mind state
-* `set_agent_state(agent_id, dimension, data, company_id=None)` — write a CXO's mind state
+* `get_chitta(agent_id, company_id=None)` / `set_chitta(agent_id, data, company_id=None)`
+* `get_ahankara(agent_id, company_id=None)` / `set_ahankara(agent_id, data, company_id=None)`
+* `get_buddhi(agent_id, company_id=None)` / `set_buddhi(agent_id, data, company_id=None)`
+* `get_action_plan(agent_id, company_id=None)` / `set_action_plan(agent_id, data, company_id=None)`
+* `get_manas(agent_id, company_id=None)` / `set_manas(agent_id, data, company_id=None)`
+* `get_integrity(agent_id, company_id=None)` / `set_integrity(agent_id, data, company_id=None)`
+* `get_responsibilities(agent_id, role, company_id=None)` / `set_responsibilities(agent_id, role, data, company_id=None)`
+* `get_entity_content(agent_id, entity, company_id=None)` / `set_entity_content(agent_id, entity, data, company_id=None)`
+* `get_entity_context(agent_id, entity, company_id=None)` / `set_entity_context(agent_id, entity, data, company_id=None)`
 * `store_schema_context(schema_name, context_id, data, company_id=None)`
 * `get_schema_context(schema_name, context_id, company_id=None)`
 * `list_schema_contexts(schema_name, company_id=None)`

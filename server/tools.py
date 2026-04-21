@@ -64,7 +64,7 @@ def _resolve_dimension(agent_id: str, dimension: str) -> tuple[str, str]:
         if dimension.startswith(prefix):
             sub_key = dimension[len(prefix):]
             return (schema_name, f"{agent_id}/{sub_key}")
-    known = list(_DIRECT_DIMENSIONS) + [f"{p}{{name}}" for p in _PREFIX_DIMENSIONS]
+    known = list(_DIRECT_DIMENSIONS) + [f"{p}<key>" for p in _PREFIX_DIMENSIONS]
     raise ValueError(
         f"Unknown dimension '{dimension}'. "
         f"Supported formats: {known}"
