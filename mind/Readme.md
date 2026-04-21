@@ -228,7 +228,9 @@ default) coexist in the same table and remain backward-compatible.
 
 ---
 
- — an autonomous C-suite boardroom that governs business decisions through purpose-driven debate, resonance scoring, and perpetual orchestration. Every action-plan in every agent's Buddhi is anchored to this purpose.
+## Initial Purpose
+
+The initial purpose of **ASI Saga** is the development of the MVP of **Business Infinity** — an autonomous C-suite boardroom that governs business decisions through purpose-driven debate, resonance scoring, and perpetual orchestration. Every action-plan in every agent's Buddhi is anchored to this purpose.
 
 ---
 

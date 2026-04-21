@@ -437,7 +437,10 @@ def store_schema_context(
     if company_id:
         entity["CompanyId"] = company_id
     client.upsert_entity(entity)
-    logger.info("Stored schema context %s/%s (company=%s)", schema_name, context_id, company_id)
+    if company_id:
+        logger.info("Stored schema context %s/%s (company=%s)", schema_name, context_id, company_id)
+    else:
+        logger.info("Stored schema context %s/%s", schema_name, context_id)
     return {"schema_name": schema_name, "context_id": context_id, "updated_at": now_iso}
 
 
