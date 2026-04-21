@@ -519,6 +519,27 @@ class TestGetDimensionSchema:
             assert "error" not in payload, f"Expected schema for dimension '{dimension}'"
             assert "title" in payload
 
+    def test_all_prefix_dimensions_return_schemas(self, schemas_dir):
+        """Every supported prefix-based dimension resolves to a valid schema."""
+        prefix_cases = [
+            ("responsibilities/entrepreneur", "RoleResponsibilities"),
+            ("responsibilities/manager", "RoleResponsibilities"),
+            ("responsibilities/domain-expert", "RoleResponsibilities"),
+            ("manas/content/company", "Entity Content Perspective — Mutable"),
+            ("manas/content/business-infinity", "Entity Content Perspective — Mutable"),
+            ("manas/context/company", "Entity Context Perspective — Immutable"),
+            ("manas/context/business-infinity", "Entity Context Perspective — Immutable"),
+        ]
+        for dimension, expected_title in prefix_cases:
+            result = asyncio.get_event_loop().run_until_complete(
+                mcp.call_tool("get_dimension_schema", {"dimension": dimension})
+            )
+            payload = json.loads(result.content[0].text)
+            assert "error" not in payload, f"Expected schema for dimension '{dimension}'"
+            assert payload["title"] == expected_title, (
+                f"Dimension '{dimension}': expected title '{expected_title}', got '{payload.get('title')}'"
+            )
+
     def test_prefix_dimension_responsibilities(self, schemas_dir):
         """A prefix dimension path resolves to the responsibilities schema."""
         result = asyncio.get_event_loop().run_until_complete(

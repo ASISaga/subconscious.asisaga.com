@@ -454,6 +454,30 @@ def get_agent_state(
     return result
 
 
+def _schema_name_for_dimension(dimension: str) -> str:
+    """Return the schema name that corresponds to *dimension*.
+
+    This is a schema-only variant of :func:`_resolve_dimension` — it discards
+    the context_id since schema lookup does not require an agent identifier.
+
+    Args:
+        dimension: The dimension path (e.g. ``"manas"``,
+            ``"responsibilities/entrepreneur"``).
+
+    Returns:
+        The canonical schema name string (e.g. ``"manas"``,
+        ``"responsibilities"``).
+
+    Raises:
+        ValueError: When *dimension* is not a recognised format.
+    """
+    # _resolve_dimension builds a context_id that includes the agent_id.  Since
+    # only the schema_name (index 0) matters here, an empty string is a valid
+    # sentinel for the agent_id parameter.
+    schema_name, _ = _resolve_dimension("", dimension)
+    return schema_name
+
+
 @mcp.tool()
 def get_dimension_schema(dimension: str) -> dict[str, Any]:
     """Fetch the JSON Schema definition for a mind dimension by its dimension path.
@@ -483,10 +507,8 @@ def get_dimension_schema(dimension: str) -> dict[str, Any]:
         The full JSON Schema object for the dimension, or an error dict if the
         dimension is unrecognised or the schema file is not available.
     """
-    # _resolve_dimension needs an agent_id but only the schema_name (index 0) is
-    # used here; the context_id (index 1) is irrelevant for schema lookup.
     try:
-        schema_name, _ = _resolve_dimension("", dimension)
+        schema_name = _schema_name_for_dimension(dimension)
     except ValueError as exc:
         return {"error": str(exc)}
     data = schema_storage.get_schema(schema_name)
